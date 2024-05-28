@@ -1,0 +1,54 @@
+FileWatcher:
+  parent: type
+  target_path: path
+  abs_path: computed from target_path
+
+InputTab:
+  ctx: context object
+  notebook: notebook object
+  file_text: initial file text
+  file_path: file path
+  text_area: scrolled text widget
+  ctx_menu: context menu
+  methods:
+    - _update_title
+    - _apply_text_setting
+    - _on_middle_click
+    - _on_ctx_menu
+    - _speech
+    - _insert_instruct_tag
+    - _set_text
+    - _append_text
+    - _insert_text
+    - _get_text
+    - _get_comment_removed_text
+    - _is_intro
+    - _switch_intro
+    - _update
+
+InputArea:
+  parent: parent widget
+  ctx: context object
+  notebook: notebook widget
+  ctx_menu: context menu
+  tabs: list of InputTab objects
+  tab: currently selected InputTab
+  methods:
+    - _on_ctx_menu
+    - _on_middle_click
+    - _on_tab_changed
+    - open_tab
+    - close_tab
+    - select_tab
+    - close_unmodified_new_tab
+    - apply_text_setting
+    - set_text
+    - get_file_path
+    - get_file_text
+    - set_file
+    - append_text
+    - insert_text
+    - get_text
+    - get_comment_removed_text
+    - get_prompt_text
+    - update
