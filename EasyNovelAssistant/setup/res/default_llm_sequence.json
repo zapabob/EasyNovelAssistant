@@ -1,0 +1,1 @@
+﻿{ "summary": { "prompt": "以下の文章を要約してください。\n\n{text}", "system": "あなたは優秀な要約者です。" }, "continue": { "prompt": "以下の文章の続きを書いてください。\n\n{text}", "system": "あなたは優秀な小説家です。" } }

@@ -1,0 +1,57 @@
+{
+    "movie_maker":  {
+                        "fps":  24,
+                        "font_size":  36,
+                        "font_color":  "#ffffff",
+                        "background_color":  "#000000",
+                        "width":  1280,
+                        "height":  720
+                    },
+    "llm":  {
+                "host":  "127.0.0.1",
+                "port":  5001,
+                "timeout":  600
+            },
+    "style_bert_vits2":  {
+                             "host":  "127.0.0.1",
+                             "port":  5000,
+                             "timeout":  600
+                         },
+    "llm_context_size":  8192,
+    "koboldcpp_host":  "127.0.0.1",
+    "koboldcpp_port":  5001,
+    "win_width":  1024,
+    "win_height":  768,
+    "win_x":  0,
+    "win_y":  0,
+    "input_area_width":  400,
+    "text_area_font":  "Meiryo UI",
+    "text_area_font_size":  12,
+    "foreground_color":  "#000000",
+    "background_color":  "#FFFFFF",
+    "select_foreground_color":  "#FFFFFF",
+    "select_background_color":  "#0078D7",
+    "auto_scroll":  true,
+    "watch_file":  true,
+    "middle_click_speech":  false,
+    "recent_files":  [
+
+                     ],
+    "llm_name":  "default",
+    "recent_dirs":  [
+
+                    ],
+    "max_length":  300,
+    "max_lengths":  [
+                        100,
+                        200,
+                        300,
+                        400,
+                        500,
+                        750,
+                        1000,
+                        1500,
+                        2000
+                    ],
+    "temperature":  0.7
+}

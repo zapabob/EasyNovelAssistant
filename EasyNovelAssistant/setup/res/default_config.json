@@ -1,0 +1,1 @@
+﻿{ "movie_maker": { "fps": 24, "font_size": 36, "font_color": "#ffffff", "background_color": "#000000", "width": 1280, "height": 720 }, "llm": { "host": "127.0.0.1", "port": 5001, "timeout": 600 }, "style_bert_vits2": { "host": "127.0.0.1", "port": 5000, "timeout": 600 } }

@@ -1,0 +1,1 @@
+﻿{ "system": "あなたは小説家アシスタントAIです。", "temperature": 1.0, "top_p": 0.95, "top_k": 50, "repetition_penalty": 1.0, "max_new_tokens": 1024 }

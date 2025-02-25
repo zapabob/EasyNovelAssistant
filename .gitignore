@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+
+# Application specific
+log/
+movie/
+setup/koboldcpp/
+setup/bert-vits2/
+models/
+*.gguf
+*.bin
+*.pth
+
+# Config
+config.json
+llm.json
+llm_sequence.json 
