@@ -5,14 +5,14 @@ import webbrowser
 from sys import platform
 
 import requests
-from utils.path import Path
+from path import Path
 
 
 class KoboldCpp:
     BAT_TEMPLATE = """@echo off
 chcp 65001 > NUL
 pushd %~dp0
-set CURL_CMD=C:\\Windows\\System32\\curl.exe -k
+set CURL_CMD=C:\Windows\System32\curl.exe -k
 
 @REM 7B: 33, 35B: 41, 70B: 65
 set GPU_LAYERS=0
@@ -44,12 +44,6 @@ popd
 
         for llm_name in ctx.llm:
             llm = ctx.llm[llm_name]
-            if not isinstance(llm, dict):
-                continue  # 辞書型でない場合はスキップ
-            
-            if "urls" not in llm:
-                continue  # urlsキーがない場合はスキップ
-            
             name = llm_name
             if "/" in llm_name:
                 _, name = llm_name.split("/")
@@ -57,27 +51,38 @@ popd
                 name = name.split(" ")[-1]
             llm["name"] = name
 
-            llm["file_names"] = []
-            for url in llm["urls"]:
-                llm["file_names"].append(url.split("/")[-1])
-            llm["file_name"] = llm["file_names"][0]
-            # urls[0]の "/resolve/main/" より前を取得
-            llm["info_url"] = llm["urls"][0].split("/resolve/main/")[0]
+            # urlsキーが存在しない場合は空リストを設定（ローカルファイル用）
+            if "urls" not in llm:
+                llm["urls"] = []
 
-            context_size = min(llm["context_size"], ctx["llm_context_size"])
-            bat_file = os.path.join(Path.kobold_cpp, f'Run-{llm["name"]}-C{context_size // 1024}K-L0.bat')
+            # file_namesの設定
+            if not llm["urls"]:
+                # urlsが空の場合（ローカルファイル）
+                llm["file_names"] = [llm["file_name"]]
+                llm["info_url"] = ""
+            else:
+                # urlsがある場合（ダウンロード用）
+                llm["file_names"] = [url.split("/")[-1] for url in llm["urls"]]
+                llm["file_name"] = llm["file_names"][0]
+                # urls[0]の "/resolve/main/" より前を取得
+                llm["info_url"] = llm["urls"][0].split("/resolve/main/")[0]
 
-            curl_cmd = ""
-            for url in llm["urls"]:
-                curl_cmd += self.CURL_TEMPLATE.format(url=url, file_name=url.split("/")[-1], info_url=llm["info_url"])
-            bat_text = self.BAT_TEMPLATE.format(
-                curl_cmd=curl_cmd,
-                option=ctx["koboldcpp_arg"],
-                context_size=context_size,
-                file_name=llm["file_name"],
-            )
-            with open(bat_file, "w", encoding="utf-8") as f:
-                f.write(bat_text)
+            # batファイルの生成（ダウンロード用URLがある場合のみ）
+            if llm["urls"]:
+                context_size = min(llm["context_size"], ctx["llm_context_size"])
+                bat_file = os.path.join(Path.kobold_cpp, f'Run-{llm["name"]}-C{context_size // 1024}K-L0.bat')
+
+                curl_cmd = ""
+                for url in llm["urls"]:
+                    curl_cmd += self.CURL_TEMPLATE.format(url=url, file_name=url.split("/")[-1], info_url=llm["info_url"])
+                bat_text = self.BAT_TEMPLATE.format(
+                    curl_cmd=curl_cmd,
+                    option=ctx["koboldcpp_arg"],
+                    context_size=context_size,
+                    file_name=llm["file_name"],
+                )
+                with open(bat_file, "w", encoding="utf-8") as f:
+                    f.write(bat_text)
 
     def get_model(self):
         try:
@@ -108,9 +113,6 @@ popd
 
     def download_model(self, llm_name):
         llm = self.ctx.llm[llm_name]
-        if not isinstance(llm, dict) or "info_url" not in llm:
-            return f"{llm_name} のモデル情報が不正です。"
-        
         webbrowser.open(llm["info_url"])
         for url in llm["urls"]:
             curl_cmd = f"curl -k -LO {url}"
@@ -131,9 +133,6 @@ popd
         gpu_layer = self.ctx["llm_gpu_layer"]
 
         llm = self.ctx.llm[llm_name]
-        if not isinstance(llm, dict) or "file_name" not in llm:
-            return f"{llm_name} のモデル情報が不正です。"
-        
         llm_path = os.path.join(Path.kobold_cpp, llm["file_name"])
 
         if not os.path.exists(llm_path):
@@ -163,8 +162,6 @@ popd
 
         llm_name = ctx["llm_name"]
         llm = ctx.llm[llm_name]
-        if not isinstance(llm, dict) or "context_size" not in llm:
-            return None
 
         # api/extra/true_max_context_length なら立ち上げ済みサーバーに対応可能
         max_context_length = min(llm["context_size"], ctx["llm_context_size"])
