@@ -1,0 +1,12 @@
+﻿{
+    "Qwen3-8B-ERP-v0.1.i1-Q6_K": {
+        "file_name": "Qwen3-8B-ERP-v0.1.i1-Q6_K.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Ninja-V3-Q4_K_M": {
+        "file_name": "Ninja-V3-Q4_K_M.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    }
+}
