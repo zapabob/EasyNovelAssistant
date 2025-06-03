@@ -1012,11 +1012,50 @@ class ConsistencyMonitor:
             print(f"セッションデータ保存エラー: {e}")
 
 
-if __name__ == "__main__":
-    easy_novel_assistant = EasyNovelAssistant()
+def main():
+    """メイン関数 - EXE化対応"""
     try:
+        print("🎯 EasyNovelAssistant v3.0 起動中...")
+        print("   KoboldCpp + GGUF統合対応版")
+        print("=" * 50)
+        
+        easy_novel_assistant = EasyNovelAssistant()
         easy_novel_assistant.run()
+        
     except KeyboardInterrupt:
         print("\nアプリケーションを終了しています...")
+        return 0
+        
+    except Exception as e:
+        print(f"❌ アプリケーション開始エラー: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # GUIでエラーメッセージを表示
+        try:
+            import tkinter as tk
+            from tkinter import messagebox
+            root = tk.Tk()
+            root.withdraw()  # メインウィンドウを隠す
+            messagebox.showerror(
+                "EasyNovelAssistant エラー",
+                f"アプリケーションの起動に失敗しました:\n\n{e}\n\n"
+                f"詳細はコンソールログを確認してください。"
+            )
+        except:
+            pass  # GUI表示も失敗した場合は無視
+        
+        return 1
+    
     finally:
-        easy_novel_assistant.cleanup()
+        try:
+            easy_novel_assistant.cleanup()
+        except:
+            pass
+    
+    return 0
+
+
+if __name__ == "__main__":
+    exit_code = main()
+    sys.exit(exit_code)

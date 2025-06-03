@@ -236,7 +236,25 @@ class CharacterProfile:
         dominant = {}
         for pattern_name, values in self.speech_patterns.items():
             if values:
-                dominant[pattern_name] = np.mean(values[-5:])  # 最新5回の平均
+                if pattern_name == "sentence_ending":
+                    # sentence_endingは辞書のリストなので、特別な処理が必要
+                    if isinstance(values[0], dict):
+                        # 各パターンの平均使用回数を計算
+                        pattern_totals = {}
+                        for ending_dict in values[-5:]:  # 最新5回
+                            for ending_type, count in ending_dict.items():
+                                if ending_type not in pattern_totals:
+                                    pattern_totals[ending_type] = []
+                                pattern_totals[ending_type].append(count)
+                        
+                        # 各パターンの平均を計算
+                        for ending_type, counts in pattern_totals.items():
+                            dominant[f"{pattern_name}_{ending_type}"] = np.mean(counts)
+                    else:
+                        dominant[pattern_name] = np.mean(values[-5:])
+                else:
+                    # 数値のリストの場合
+                    dominant[pattern_name] = np.mean(values[-5:])
         return dominant
 
 
@@ -295,6 +313,142 @@ class AdvancedConsistencyProcessor:
             
         return logger
     
+    def analyze_character_consistency(self, text: str) -> Dict[str, Any]:
+        """キャラクター一貫性の分析"""
+        try:
+            character_name = self._identify_character(text)
+            if character_name not in self.character_profiles:
+                # 新規キャラクターの場合は基準なしとして高スコア
+                return {
+                    "consistency_score": 0.95,
+                    "issues": [],
+                    "character_name": character_name
+                }
+            
+            profile = self.character_profiles[character_name]
+            
+            # 一時的な感情状態を作成して分析
+            current_emotion = EmotionalState()
+            current_emotion.update(text)
+            
+            issues = []
+            consistency_score = 1.0
+            
+            # 感情変化の激しさチェック
+            if len(profile.emotional_history) > 0:
+                last_emotion = profile.emotional_history[-1]
+                emotional_distance = current_emotion.distance_from(last_emotion)
+                if emotional_distance > 0.6:
+                    issues.append("急激な感情変化")
+                    consistency_score -= 0.3
+            
+            # 話し方パターンの一貫性チェック
+            pattern_issues = self._check_speech_pattern_consistency(text, profile)
+            issues.extend(pattern_issues)
+            consistency_score -= len(pattern_issues) * 0.1
+            
+            return {
+                "consistency_score": max(0.0, consistency_score),
+                "issues": issues,
+                "character_name": character_name
+            }
+            
+        except Exception as e:
+            self.logger.error(f"キャラクター一貫性分析エラー: {e}")
+            return {
+                "consistency_score": 0.5,
+                "issues": ["分析エラー"],
+                "character_name": "unknown"
+            }
+    
+    def analyze_emotional_flow(self, text: str) -> Dict[str, Any]:
+        """感情推移の分析"""
+        try:
+            current_emotion = EmotionalState()
+            current_emotion.update(text)
+            
+            # 基本的な感情検出
+            emotions = []
+            if current_emotion.valence > 0.6:
+                emotions.append("positive")
+            elif current_emotion.valence < 0.4:
+                emotions.append("negative")
+            else:
+                emotions.append("neutral")
+            
+            if current_emotion.arousal > 0.6:
+                emotions.append("excited")
+            elif current_emotion.arousal < 0.3:
+                emotions.append("calm")
+            
+            # 感情推移スコア計算
+            flow_score = 1.0
+            issues = []
+            
+            # 極端な感情表現チェック
+            exclamation_density = (text.count("！") + text.count("!")) / max(len(text), 1)
+            if exclamation_density > 0.1:
+                issues.append("過度な感情表現")
+                flow_score -= 0.2
+            
+            # 感情の急激な変化チェック
+            emotional_markers = ["うわああ", "ぎゃああ", "きゃああ"]
+            for marker in emotional_markers:
+                if marker in text:
+                    issues.append("急激な感情表現")
+                    flow_score -= 0.3
+                    break
+            
+            return {
+                "flow_score": max(0.0, flow_score),
+                "emotions": emotions,
+                "issues": issues,
+                "emotional_state": current_emotion.to_dict()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"感情推移分析エラー: {e}")
+            return {
+                "flow_score": 0.5,
+                "emotions": ["unknown"],
+                "issues": ["分析エラー"]
+            }
+    
+    def _check_speech_pattern_consistency(self, text: str, profile: CharacterProfile) -> List[str]:
+        """話し方パターンの一貫性チェック"""
+        issues = []
+        
+        # 文末パターンの急激な変化チェック
+        current_endings = self._extract_sentence_endings(text)
+        
+        if "sentence_ending" in profile.speech_patterns and len(profile.speech_patterns["sentence_ending"]) > 0:
+            # 過去の傾向と比較
+            recent_patterns = profile.speech_patterns["sentence_ending"][-3:]  # 最新3回
+            
+            # 極端な違いがあるかチェック
+            for pattern_name, current_count in current_endings.items():
+                if current_count > 0:
+                    # 過去の使用頻度と比較
+                    past_usage = any(pattern.get(pattern_name, 0) > 0 for pattern in recent_patterns)
+                    if not past_usage:
+                        issues.append(f"新しい話し方パターン: {pattern_name}")
+        
+        return issues
+    
+    def _extract_sentence_endings(self, text: str) -> Dict[str, int]:
+        """文末表現の抽出（CharacterProfileと同じ実装）"""
+        endings = {
+            "だ": text.count("だ。") + text.count("だ！"),
+            "である": text.count("である"),
+            "です": text.count("です"),
+            "ます": text.count("ます"),
+            "だね": text.count("だね"),
+            "よ": text.count("よ。") + text.count("よ！"),
+            "な": text.count("な。") + text.count("な！"),
+            "の": text.count("の。") + text.count("の？")
+        }
+        return endings
+
     def enhance_consistency(self, text: str, context: str = "") -> str:
         """
         文章の一貫性を向上させる

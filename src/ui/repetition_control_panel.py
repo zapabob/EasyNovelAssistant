@@ -2,28 +2,49 @@
 """
 反復抑制システムv3 リアルタイム制御パネル
 GUI統合版 - ユーザーが直感的に反復制御を調整できるインターフェース
+双方向バインディング対応版
 """
 
 import tkinter as tk
 import tkinter.ttk as ttk
 from typing import Dict, Callable, Optional
 
+# 双方向バインディングシステムのインポート
+try:
+    from .bidirectional_binding import create_ena_bidirectional_system, ENASettingsModel, BidirectionalBinder
+    BIDIRECTIONAL_BINDING_AVAILABLE = True
+except ImportError:
+    BIDIRECTIONAL_BINDING_AVAILABLE = False
+    print("⚠️ 双方向バインディングシステムが利用できません")
+
 
 class RepetitionControlPanel:
-    """反復抑制システムv3のリアルタイム制御パネル"""
+    """反復抑制システムv3のリアルタイム制御パネル（双方向バインディング対応）"""
     
     def __init__(self, parent, ctx, on_settings_changed: Optional[Callable] = None):
         self.ctx = ctx
         self.on_settings_changed = on_settings_changed
         
         # メインフレーム
-        self.frame = ttk.LabelFrame(parent, text="🔄 反復抑制制御 v3", padding="5")
+        self.frame = ttk.LabelFrame(parent, text="🔄 反復抑制制御 v3 (双方向)", padding="5")
         
-        # 設定値の初期化
+        # 双方向バインディングシステムの初期化
+        if BIDIRECTIONAL_BINDING_AVAILABLE:
+            self.model, self.binder = create_ena_bidirectional_system()
+            self.setup_model_observers()
+        else:
+            self.model = None
+            self.binder = None
+        
+        # 設定値の初期化（従来方式との互換性維持）
         self.init_variables()
         
         # GUI要素の構築
         self.build_gui()
+        
+        # 双方向バインディング設定
+        if BIDIRECTIONAL_BINDING_AVAILABLE:
+            self.setup_bidirectional_bindings()
         
         # 初期設定の適用
         self.load_current_settings()
@@ -61,37 +82,37 @@ class RepetitionControlPanel:
         
         # 類似度閾値
         ttk.Label(basic_frame, text="類似度閾値:").grid(row=0, column=0, sticky="w")
-        similarity_scale = ttk.Scale(
+        self.similarity_scale = ttk.Scale(
             basic_frame, 
             from_=0.1, to=0.8, 
             variable=self.similarity_threshold_var,
             command=self._on_similarity_changed
         )
-        similarity_scale.grid(row=0, column=1, sticky="ew", padx=5)
+        self.similarity_scale.grid(row=0, column=1, sticky="ew", padx=5)
         self.similarity_label = ttk.Label(basic_frame, text="0.35")
         self.similarity_label.grid(row=0, column=2, sticky="w")
         
         # 最大検出距離
         ttk.Label(basic_frame, text="検出距離:").grid(row=1, column=0, sticky="w")
-        distance_scale = ttk.Scale(
+        self.distance_scale = ttk.Scale(
             basic_frame,
             from_=10, to=100,
             variable=self.max_distance_var,
             command=self._on_distance_changed
         )
-        distance_scale.grid(row=1, column=1, sticky="ew", padx=5)
+        self.distance_scale.grid(row=1, column=1, sticky="ew", padx=5)
         self.distance_label = ttk.Label(basic_frame, text="50")
         self.distance_label.grid(row=1, column=2, sticky="w")
         
         # 最小圧縮率
         ttk.Label(basic_frame, text="圧縮基準:").grid(row=2, column=0, sticky="w")
-        compress_scale = ttk.Scale(
+        self.compress_scale = ttk.Scale(
             basic_frame,
             from_=0.01, to=0.10,
             variable=self.min_compress_rate_var,
             command=self._on_compress_changed
         )
-        compress_scale.grid(row=2, column=1, sticky="ew", padx=5)
+        self.compress_scale.grid(row=2, column=1, sticky="ew", padx=5)
         self.compress_label = ttk.Label(basic_frame, text="3.0%")
         self.compress_label.grid(row=2, column=2, sticky="w")
         
@@ -103,36 +124,36 @@ class RepetitionControlPanel:
         
         # n-gramブロック
         ttk.Label(v3_frame, text="n-gramサイズ:").grid(row=0, column=0, sticky="w")
-        ngram_scale = ttk.Scale(
+        self.ngram_scale = ttk.Scale(
             v3_frame,
             from_=2, to=5,
             variable=self.ngram_block_size_var,
             command=self._on_ngram_changed
         )
-        ngram_scale.grid(row=0, column=1, sticky="ew", padx=5)
+        self.ngram_scale.grid(row=0, column=1, sticky="ew", padx=5)
         self.ngram_label = ttk.Label(v3_frame, text="3")
         self.ngram_label.grid(row=0, column=2, sticky="w")
         
         # DRP設定
         ttk.Label(v3_frame, text="DRP基準:").grid(row=1, column=0, sticky="w")
-        drp_base_scale = ttk.Scale(
+        self.drp_base_scale = ttk.Scale(
             v3_frame,
             from_=1.0, to=1.5,
             variable=self.drp_base_var,
             command=self._on_drp_base_changed
         )
-        drp_base_scale.grid(row=1, column=1, sticky="ew", padx=5)
+        self.drp_base_scale.grid(row=1, column=1, sticky="ew", padx=5)
         self.drp_base_label = ttk.Label(v3_frame, text="1.10")
         self.drp_base_label.grid(row=1, column=2, sticky="w")
         
         ttk.Label(v3_frame, text="DRPアルファ:").grid(row=2, column=0, sticky="w")
-        drp_alpha_scale = ttk.Scale(
+        self.drp_alpha_scale = ttk.Scale(
             v3_frame,
             from_=0.1, to=1.0,
             variable=self.drp_alpha_var,
             command=self._on_drp_alpha_changed
         )
-        drp_alpha_scale.grid(row=2, column=1, sticky="ew", padx=5)
+        self.drp_alpha_scale.grid(row=2, column=1, sticky="ew", padx=5)
         self.drp_alpha_label = ttk.Label(v3_frame, text="0.5")
         self.drp_alpha_label.grid(row=2, column=2, sticky="w")
         
@@ -160,6 +181,20 @@ class RepetitionControlPanel:
                 command=self._on_toggle_changed
             )
             checkbox.grid(row=row, column=col, sticky="w", padx=5, pady=1)
+            
+            # チェックボックス参照の保存（双方向バインディング用）
+            if var == self.enable_4gram_var:
+                self.enable_4gram_checkbox = checkbox
+            elif var == self.enable_drp_var:
+                self.enable_drp_checkbox = checkbox
+            elif var == self.enable_mecab_var:
+                self.enable_mecab_checkbox = checkbox
+            elif var == self.enable_rhetorical_var:
+                self.enable_rhetorical_checkbox = checkbox
+            elif var == self.enable_latin_number_var:
+                self.enable_latin_number_checkbox = checkbox
+            elif var == self.aggressive_mode_var:
+                self.aggressive_mode_checkbox = checkbox
         
         # === 統計表示セクション ===
         stats_frame = ttk.LabelFrame(self.frame, text="リアルタイム統計", padding="3")
@@ -198,6 +233,63 @@ class RepetitionControlPanel:
         
         # フレーム全体の重み調整
         self.frame.columnconfigure(0, weight=1)
+    
+    def setup_model_observers(self):
+        """モデルオブザーバーの設定"""
+        if not self.model:
+            return
+        
+        # 設定変更を監視して外部に通知
+        def on_any_change(value):
+            if self.on_settings_changed:
+                self.on_settings_changed(self.model.to_dict())
+            
+            # 反復抑制システムにも直接適用
+            if hasattr(self.ctx, 'repetition_suppressor') and self.ctx.repetition_suppressor:
+                self.model.apply_to_suppressor(self.ctx.repetition_suppressor)
+        
+        # 全プロパティの変更を監視
+        for property_name in self.model._properties:
+            self.model.get_property(property_name).subscribe(on_any_change)
+    
+    def setup_bidirectional_bindings(self):
+        """双方向バインディングの設定"""
+        if not self.model or not self.binder:
+            return
+        
+        # ウィジェットとモデルプロパティをバインド
+        try:
+            # 各スケールウィジェットをバインド
+            if hasattr(self, 'similarity_scale'):
+                self.binder.bind_widget(self.similarity_scale, self.model, 'similarity_threshold')
+            if hasattr(self, 'distance_scale'):
+                self.binder.bind_widget(self.distance_scale, self.model, 'max_distance')
+            if hasattr(self, 'compress_scale'):
+                self.binder.bind_widget(self.compress_scale, self.model, 'min_compress_rate')
+            if hasattr(self, 'ngram_scale'):
+                self.binder.bind_widget(self.ngram_scale, self.model, 'ngram_block_size')
+            if hasattr(self, 'drp_base_scale'):
+                self.binder.bind_widget(self.drp_base_scale, self.model, 'drp_base')
+            if hasattr(self, 'drp_alpha_scale'):
+                self.binder.bind_widget(self.drp_alpha_scale, self.model, 'drp_alpha')
+            
+            # チェックボックスをバインド
+            if hasattr(self, 'enable_4gram_var'):
+                self.binder.bind_widget(self.enable_4gram_checkbox, self.model, 'enable_4gram')
+            if hasattr(self, 'enable_drp_var'):
+                self.binder.bind_widget(self.enable_drp_checkbox, self.model, 'enable_drp')
+            if hasattr(self, 'enable_mecab_var'):
+                self.binder.bind_widget(self.enable_mecab_checkbox, self.model, 'enable_mecab')
+            if hasattr(self, 'enable_rhetorical_var'):
+                self.binder.bind_widget(self.enable_rhetorical_checkbox, self.model, 'enable_rhetorical')
+            if hasattr(self, 'enable_latin_number_var'):
+                self.binder.bind_widget(self.enable_latin_number_checkbox, self.model, 'enable_latin_number')
+            if hasattr(self, 'aggressive_mode_var'):
+                self.binder.bind_widget(self.aggressive_mode_checkbox, self.model, 'aggressive_mode')
+            
+            print("✅ 双方向バインディング設定完了")
+        except Exception as e:
+            print(f"⚠️ 双方向バインディング設定エラー: {e}")
     
     def _on_similarity_changed(self, value):
         """類似度閾値変更時のコールバック"""
@@ -368,4 +460,51 @@ class RepetitionControlPanel:
     
     def grid(self, **kwargs):
         """パネルのグリッド配置"""
-        self.frame.grid(**kwargs) 
+        self.frame.grid(**kwargs)
+    
+    def update_settings_from_code(self, settings: Dict) -> None:
+        """コード側からの設定更新（双方向バインディング対応）"""
+        if BIDIRECTIONAL_BINDING_AVAILABLE and self.model:
+            # モデル経由で更新すると自動的にGUIに反映される
+            self.model.load_from_dict(settings)
+            print(f"✅ 双方向バインディング経由で設定更新: {len(settings)}項目")
+        else:
+            # 従来方式
+            self.apply_settings(settings)
+            print(f"✅ 従来方式で設定更新: {len(settings)}項目")
+    
+    def get_current_model_settings(self) -> Dict:
+        """現在のモデル設定を取得"""
+        if BIDIRECTIONAL_BINDING_AVAILABLE and self.model:
+            return self.model.to_dict()
+        else:
+            return self.get_current_settings()
+    
+    def demonstrate_bidirectional_sync(self) -> None:
+        """双方向同期のデモンストレーション"""
+        if not (BIDIRECTIONAL_BINDING_AVAILABLE and self.model):
+            print("⚠️ 双方向バインディングが利用できません")
+            return
+        
+        print("🎯 双方向同期デモ開始")
+        
+        # コード側から値を変更してGUIの更新を確認
+        original_threshold = self.model.get_value('similarity_threshold')
+        print(f"   現在の類似度閾値: {original_threshold}")
+        
+        # 値を変更
+        new_threshold = 0.42
+        self.model.set_value('similarity_threshold', new_threshold)
+        print(f"   新しい類似度閾値: {new_threshold} (GUIも自動更新されるはず)")
+        
+        # 元に戻す
+        self.model.set_value('similarity_threshold', original_threshold)
+        print(f"   閾値を元に戻しました: {original_threshold}")
+        
+        print("🎉 双方向同期デモ完了")
+    
+    def destroy(self) -> None:
+        """パネル破棄（バインディング解除）"""
+        if BIDIRECTIONAL_BINDING_AVAILABLE and self.binder:
+            self.binder.destroy_all()
+            print("🧹 双方向バインディング解除完了") 

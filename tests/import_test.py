@@ -65,7 +65,9 @@ def test_core_imports():
             print(f"❌ EasyNovelAssistant.src.{module_name}: {e}")
             test_results.append((f"EasyNovelAssistant.src.{module_name}", False, str(e)))
     
-    return test_results
+    # pytest用のアサーション - 全てのテストが成功することを検証
+    failed_imports = [result for result in test_results if not result[1]]
+    assert len(failed_imports) == 0, f"Failed imports: {failed_imports}"
 
 def test_advanced_initialization():
     """統合システムv3の初期化テスト"""
@@ -85,12 +87,14 @@ def test_advanced_initialization():
         print("   ├─ クロス抑制システム確認")
         print("   └─ θ最適化エンジン確認")
         
-        return True
+        # pytest用のアサーション - 初期化成功を検証
+        assert True, "Advanced initialization successful"
         
     except Exception as e:
         print(f"❌ 統合システムv3 初期化失敗: {e}")
         traceback.print_exc()
-        return False
+        # pytest用のアサーション - 初期化失敗時
+        assert False, f"Advanced initialization failed: {e}"
 
 def generate_import_report(test_results):
     """インポートテスト結果レポート生成"""
@@ -129,22 +133,23 @@ def main():
     print("   Phase 4 最終仕上げ - モジュール統合確認")
     print("=" * 60)
     
-    # コアインポートテスト
-    test_results = test_core_imports()
-    
-    # 統合システム初期化テスト
-    init_success = test_advanced_initialization()
-    
-    # レポート生成とCI判定
-    exit_code = generate_import_report(test_results)
-    
-    if init_success and exit_code == 0:
+    try:
+        # コアインポートテスト（アサーションで検証）
+        test_core_imports()
+        
+        # 統合システム初期化テスト（アサーションで検証）
+        test_advanced_initialization()
+        
         print("\n🏆 全テスト合格 - 次のステップへ")
         print("   ✅ インポート修正完了")
         print("   🚀 GUI ↔ Core 双方向同期 準備OK")
         return 0
-    else:
-        print("\n📈 改善点あり - 継続修正必要")
+        
+    except AssertionError as e:
+        print(f"\n📈 改善点あり - 継続修正必要: {e}")
+        return 1
+    except Exception as e:
+        print(f"\n❌ 予期しないエラー: {e}")
         return 1
 
 if __name__ == "__main__":
