@@ -110,4 +110,50 @@ backup*/
 *.tmp
 *.temp
 *.log
-.specstory/ 
+.specstory/
+
+# Large files and binaries (>100MB)
+# AI Model files
+*.gguf
+*.bin
+*.safetensors
+*.pt
+*.pth
+*.onnx
+
+# Large executable files
+*.exe
+*.dll
+*.lib
+*.so.*
+
+# KoboldCpp directory (contains large binaries)
+KoboldCpp/
+
+# Style-Bert-VITS2 directory (contains large models)
+Style-Bert-VITS2/
+
+# Large media files
+*.mp4
+*.avi
+*.mkv
+*.mov
+*.wmv
+*.flv
+*.wav
+*.mp3
+*.flac
+
+# Large archive files
+*.zip
+*.rar
+*.7z
+*.tar.gz
+*.tar.bz2
+
+# IDE files
+.cursorindexingignore
+.vscode/
+.idea/
+*.swp
+*.swo 

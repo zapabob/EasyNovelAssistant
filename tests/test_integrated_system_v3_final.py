@@ -15,17 +15,25 @@ import time
 import threading
 import json
 import logging
+import os
+import sys
 from pathlib import Path
-from typing import Dict, List, Any, Tuple
+from typing import Dict, List, Any, Tuple, Callable
 from dataclasses import dataclass
 import gc
 
+# パス設定
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+src_dir = os.path.join(project_root, "src")
+sys.path.insert(0, src_dir)
+
 # テスト対象システム
 try:
-    from src.optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
-    from src.integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller, TaskPriority
-    from src.nkat.nkat_integration_preparation_v3 import create_nkat_integration_system, NKATCharacterArchetype
-    from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+    from optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
+    from integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller, TaskPriority
+    from nkat.nkat_integration_preparation_v3 import create_nkat_integration_system, NKATCharacterArchetype
+    from utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
     SYSTEMS_AVAILABLE = True
 except ImportError as e:
     print(f"⚠️ システムインポートエラー: {e}")
