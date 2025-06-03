@@ -231,3 +231,16 @@
 - インストール時に [ダウンロードするモノの一覧](https://github.com/Zuntan03/EasyNovelAssistant/blob/48350f45c838e4cda4f2a977c446e1f4141c858f/EasyNovelAssistant/setup/Install-EasyNovelAssistant.bat#L31) を表示します。
 - `EasyNovelAssistant/setup/res/tkinter-PythonSoftwareFoundationLicense.zip` は Python Software Foundation License です。
 - [Style-Bert-VITS2](https://github.com/litagin02/Style-Bert-VITS2) がダウンロードする [JVNV](https://sites.google.com/site/shinnosuketakamichi/research-topics/jvnv_corpus) 派生物は [CC BY-SA 4.0 DEED](https://creativecommons.org/licenses/by-sa/4.0/deed.ja) です。
+
+## 概要
+
+EasyNovelAssistantは、軽量で規制や検閲のない日本語ローカルLLM『[LightChatAssistant-TypeB](https://huggingface.co/Sdff-Ltba/LightChatAssistant-TypeB-2x7B-GGUF)』を活用した、簡単なノベル生成アシスタントです。ローカル環境での永続生成を通じて、理想的な文章を追求できます。読み上げ機能も搭載しています。
+
+内部で利用している[KoboldCpp](https://github.com/LostRuins/koboldcpp)や[Style-Bert-VITS2](https://github.com/litagin02/Style-Bert-VITS2)を直接操作することも可能です。また、[EasySdxlWebUi](https://github.com/Zuntan03/EasySdxlWebUi)と連携して画像生成しながらの利用もサポートしています。
+
+## 最新機能
+
+- **タブ機能**: プロンプト入力欄にタブを追加し、複数のプロンプトの比較や調整が容易になりました。
+- **イントロプロンプト**: 特定のタブをイントロプロンプトとして設定し、他のタブに自動的に追加する機能を実装。世界観やキャラ設定を一元管理できます。
+- **複数ファイル対応**: 複数ファイルやフォルダをドラッグ＆ドロップで簡単に読み込めます。
+- **最近のモデル追加**: 最新の軽量モデル（例：[Ninja-V3-7B](https://huggingface.co/Local-Novel-LLM-project/Ninja-V3)）に対応し、生成品質が向上しています。
