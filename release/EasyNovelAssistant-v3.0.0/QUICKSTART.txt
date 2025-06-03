@@ -1,8 +1,0 @@
-🎯 EasyNovelAssistant v3.0 - クイックスタート
-
-1. 📁 Launch_Portable.bat をダブルクリック
-2. 🔧 初回起動時は設定を確認
-3. 📝 プロンプトを入力して生成開始
-4. 🎉 小説作成をお楽しみください！
-
-詳細: README_RELEASE.md を参照

@@ -33,18 +33,15 @@ if torch_available:
 else:
     print("INFO: PyTorch not available - running in basic mode")
 
-# EasyNovelAssistant/src内のモジュールインポート
-src_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, src_dir)
-
-from const import Const
-from context import Context
-from form import Form
-from generator import Generator
-from kobold_cpp import KoboldCpp
-from movie_maker import MovieMaker
-from path import Path
-from style_bert_vits2 import StyleBertVits2
+# 新しい構造化されたモジュールインポート
+from app.core.const import Const
+from app.core.context import Context
+from app.core.path import Path
+from app.ui.form import Form
+from app.utils.generator import Generator
+from app.integrations.kobold_cpp import KoboldCpp
+from app.integrations.movie_maker import MovieMaker
+from app.integrations.style_bert_vits2 import StyleBertVits2
 
 
 class EasyNovelAssistant:
