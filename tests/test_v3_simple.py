@@ -9,7 +9,8 @@ import os
 
 # パス設定
 current_dir = os.path.dirname(os.path.abspath(__file__))
-src_dir = os.path.join(current_dir, "src")
+project_root = os.path.dirname(current_dir)
+src_dir = os.path.join(project_root, "src")
 sys.path.insert(0, src_dir)
 
 from utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3

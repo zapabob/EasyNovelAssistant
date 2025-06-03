@@ -7,13 +7,20 @@ Phase 2完成システムの基本動作確認
 import asyncio
 import time
 import sys
+import os
+
+# パス設定
+current_dir = os.path.dirname(os.path.abspath(__file__))
+project_root = os.path.dirname(current_dir)
+src_dir = os.path.join(project_root, "src")
+sys.path.insert(0, src_dir)
 
 def test_system_imports():
     """システムインポートテスト"""
     print("🧪 システムインポートテスト開始")
     
     try:
-        from src.optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
+        from optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
         print("✅ メモリ効率化システム v3.0 インポート成功")
         memory_success = True
     except Exception as e:
@@ -21,7 +28,7 @@ def test_system_imports():
         memory_success = False
     
     try:
-        from src.integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller
+        from integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller
         print("✅ リアルタイム協調制御システム v3.0 インポート成功")
         coordination_success = True
     except Exception as e:
@@ -29,7 +36,7 @@ def test_system_imports():
         coordination_success = False
     
     try:
-        from src.nkat.nkat_integration_preparation_v3 import create_nkat_integration_system
+        from nkat.nkat_integration_preparation_v3 import create_nkat_integration_system
         print("✅ NKAT理論統合準備システム v3.0 インポート成功")
         nkat_success = True
     except Exception as e:
@@ -37,7 +44,7 @@ def test_system_imports():
         nkat_success = False
     
     try:
-        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        from utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
         print("✅ 反復抑制システム v3.0 インポート成功")
         repetition_success = True
     except Exception as e:
@@ -63,7 +70,7 @@ def test_memory_system_basic():
     print("\n💾 メモリシステム基本テスト")
     
     try:
-        from src.optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
+        from optimization.memory_efficiency_system_v3 import create_memory_efficiency_system
         
         # システム作成
         memory_system = create_memory_efficiency_system({
@@ -103,7 +110,7 @@ async def test_coordination_system_basic():
     print("\n🎯 協調制御システム基本テスト")
     
     try:
-        from src.integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller, TaskPriority
+        from integration.realtime_coordination_controller_v3 import create_realtime_coordination_controller, TaskPriority
         
         # システム作成
         controller = create_realtime_coordination_controller({
@@ -158,7 +165,7 @@ async def test_nkat_system_basic():
     print("\n🧠 NKATシステム基本テスト")
     
     try:
-        from src.nkat.nkat_integration_preparation_v3 import create_nkat_integration_system, NKATCharacterArchetype
+        from nkat.nkat_integration_preparation_v3 import create_nkat_integration_system, NKATCharacterArchetype
         
         # システム作成
         nkat_system = create_nkat_integration_system({
@@ -207,7 +214,7 @@ def test_repetition_system_basic():
     print("\n🔄 反復抑制システム基本テスト")
     
     try:
-        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        from utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
         
         # システム作成
         suppressor = AdvancedRepetitionSuppressorV3({
@@ -219,19 +226,21 @@ def test_repetition_system_basic():
         test_text = "今日は今日は、ええ天気やなあ、ええ天気やなあ。"
         
         # 反復抑制処理
-        processed_text, debug_info = suppressor.suppress_repetitions_with_debug_v3(
+        processed_text, metrics = suppressor.suppress_repetitions_with_debug_v3(
             test_text, "test_character"
         )
         
         print(f"  入力テキスト: {test_text}")
         print(f"  処理結果: {processed_text}")
-        print(f"  改善度: {debug_info.get('improvement_ratio', 0):.1%}")
-        print(f"  処理時間: {debug_info.get('processing_time', 0):.3f}秒")
+        compression_rate = (metrics.input_length - metrics.output_length) / metrics.input_length if metrics.input_length > 0 else 0
+        print(f"  圧縮率: {compression_rate:.1%}")
+        print(f"  処理時間: {metrics.processing_time_ms:.1f}ms")
+        print(f"  成功率: {metrics.success_rate:.1%}")
         
         # 統計取得
-        stats = suppressor.get_suppression_statistics()
-        print(f"  処理件数: {stats.get('total_processed', 0)}")
-        print(f"  成功率: {stats.get('success_rate', 0):.1%}")
+        stats = suppressor.get_statistics()
+        print(f"  処理件数: {stats.get('total_attempts', 0)}")
+        print(f"  累積成功率: {stats.get('success_rate', 0):.1%}")
         
         print("✅ 反復抑制システム基本テスト成功")
         return True
