@@ -3,9 +3,19 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import scrolledtext
 
-from const import Const
-from watchdog.events import FileSystemEventHandler
-from watchdog.observers import Observer
+from app.core.const import Const
+try:
+    from watchdog.events import FileSystemEventHandler
+    from watchdog.observers import Observer
+except Exception:  # pragma: no cover - optional dependency
+    FileSystemEventHandler = object
+    class Observer:
+        def schedule(self, *_, **__):
+            pass
+        def start(self):
+            pass
+        def stop(self):
+            pass
 
 
 class FileWatcher(FileSystemEventHandler):

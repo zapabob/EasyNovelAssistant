@@ -1,7 +1,7 @@
 ﻿import json
 import os
 
-from path import Path
+from app.core.path import Path
 
 
 class Context:

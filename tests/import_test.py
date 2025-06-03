@@ -22,18 +22,19 @@ def test_core_imports():
     
     # 1. EasyNovelAssistantメインクラス
     try:
-        from EasyNovelAssistant.src.easy_novel_assistant import EasyNovelAssistant
+        from easy_novel_assistant import EasyNovelAssistant
         print("✅ EasyNovelAssistant メインクラス")
-        test_results.append(("EasyNovelAssistant", True, None))
+        test_results.append(("easy_novel_assistant", True, None))
     except Exception as e:
         print(f"❌ EasyNovelAssistant メインクラス: {e}")
-        test_results.append(("EasyNovelAssistant", False, str(e)))
+        test_results.append(("easy_novel_assistant", False, str(e)))
     
     # 2. 統合システムv3コンポーネント
     integration_modules = [
-        ("src.utils.repetition_suppressor_v3", "AdvancedRepetitionSuppressorV3"),
-        ("src.integration.lora_style_coordinator", "LoRAStyleCoordinator"),
-        ("src.integration.cross_suppression_engine", "CrossSuppressionEngine"),
+        ("app.utils.generator", "Generator"),
+        ("app.integrations.kobold_cpp", "KoboldCpp"),
+        ("app.integrations.style_bert_vits2", "StyleBertVits2"),
+        ("app.integrations.movie_maker", "MovieMaker"),
     ]
     
     for module_name, class_name in integration_modules:
@@ -48,22 +49,23 @@ def test_core_imports():
     
     # 3. EasyNovelAssistant/src内のモジュール
     src_modules = [
-        "const", "context", "form", "generator", 
-        "kobold_cpp", "movie_maker", "path", "style_bert_vits2"
+        "app.core.const", "app.core.context", "app.ui.form", "app.utils.generator",
+        "app.integrations.kobold_cpp", "app.integrations.movie_maker",
+        "app.core.path", "app.integrations.style_bert_vits2"
     ]
     
     # srcディレクトリをパスに追加
-    src_dir = project_root / "EasyNovelAssistant" / "src"
-    sys.path.insert(0, str(src_dir))
+    app_dir = project_root / "app"
+    sys.path.insert(0, str(app_dir))
     
     for module_name in src_modules:
         try:
             __import__(module_name)
-            print(f"✅ EasyNovelAssistant.src.{module_name}")
-            test_results.append((f"EasyNovelAssistant.src.{module_name}", True, None))
+            print(f"✅ {module_name}")
+            test_results.append((module_name, True, None))
         except Exception as e:
-            print(f"❌ EasyNovelAssistant.src.{module_name}: {e}")
-            test_results.append((f"EasyNovelAssistant.src.{module_name}", False, str(e)))
+            print(f"❌ {module_name}: {e}")
+            test_results.append((module_name, False, str(e)))
     
     # pytest用のアサーション - 全てのテストが成功することを検証
     failed_imports = [result for result in test_results if not result[1]]
@@ -78,7 +80,7 @@ def test_advanced_initialization():
         # インスタンス作成テスト（GUI無しモード）
         os.environ['ENA_HEADLESS'] = '1'  # GUI起動を抑制
         
-        from EasyNovelAssistant.src.easy_novel_assistant import EasyNovelAssistant
+        from easy_novel_assistant import EasyNovelAssistant
         print("✅ EasyNovelAssistant クラス読み込み成功")
         
         # 統合システムの初期化確認

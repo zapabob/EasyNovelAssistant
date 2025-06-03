@@ -1,7 +1,7 @@
 ﻿import tkinter as tk
 from tkinter import scrolledtext
 
-from const import Const
+from app.core.const import Const
 
 
 class GenArea:
