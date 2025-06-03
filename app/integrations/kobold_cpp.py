@@ -5,7 +5,7 @@ import webbrowser
 from sys import platform
 
 import requests
-from path import Path
+from app.core.path import Path
 
 
 class KoboldCpp:

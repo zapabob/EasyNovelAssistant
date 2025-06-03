@@ -6,8 +6,8 @@ from sys import platform
 
 import numpy as np
 import requests
-from job_queue import JobQueue
-from path import Path
+from app.utils.job_queue import JobQueue
+from app.core.path import Path
 
 # EXE化対応: scipyの安全なインポート
 SCIPY_AVAILABLE = False

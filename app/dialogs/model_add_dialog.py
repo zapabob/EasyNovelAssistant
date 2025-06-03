@@ -3,7 +3,7 @@ import os
 import shutil
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
-from path import Path
+from app.core.path import Path
 
 class ModelAddDialog(tk.Toplevel):
     def __init__(self, parent):

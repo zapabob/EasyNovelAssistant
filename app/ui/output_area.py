@@ -1,8 +1,8 @@
 ﻿import tkinter as tk
 from tkinter import scrolledtext
 
-from const import Const
-from path import Path
+from app.core.const import Const
+from app.core.path import Path
 
 
 class OutputArea:

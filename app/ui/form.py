@@ -1,22 +1,37 @@
 ﻿import tkinter as tk
 
-from const import Const
-from gen_area import GenArea
-from input_area import InputArea
-from menu.file_menu import FileMenu
-from menu.gen_menu import GenMenu
-from menu.help_menu import HelpMenu
-from menu.model_menu import ModelMenu
-from menu.sample_menu import SampleMenu
-from menu.setting_menu import SettingMenu
-from menu.speech_menu import SpeechMenu
-from menu.tool_menu import ToolMenu
-from output_area import OutputArea
-from tkinterdnd2 import DND_FILES, TkinterDnD
+from app.core.const import Const
+from .gen_area import GenArea
+from .input_area import InputArea
+from .output_area import OutputArea
+
+try:
+    from tkinterdnd2 import DND_FILES, TkinterDnD
+except Exception:  # pragma: no cover - optional dependency
+    TkinterDnD = tk
+    DND_FILES = None
+
+# メニュークラスは存在しない場合に備えてダミー実装を用意
+try:
+    from menu.file_menu import FileMenu
+    from menu.gen_menu import GenMenu
+    from menu.help_menu import HelpMenu
+    from menu.model_menu import ModelMenu
+    from menu.sample_menu import SampleMenu
+    from menu.setting_menu import SettingMenu
+    from menu.speech_menu import SpeechMenu
+    from menu.tool_menu import ToolMenu
+except Exception:  # pragma: no cover - optional menus
+    class _DummyMenu:
+        def __init__(self, *_, **__):
+            pass
+        def dnd_file(self, *_, **__):
+            pass
+    FileMenu = GenMenu = HelpMenu = ModelMenu = SampleMenu = SettingMenu = SpeechMenu = ToolMenu = _DummyMenu
 
 # 統合システムv3制御パネル
 try:
-    from integration_control_panel import IntegrationControlPanel
+    from app.dialogs.integration_control_panel import IntegrationControlPanel
     INTEGRATION_PANEL_AVAILABLE = True
 except ImportError:
     INTEGRATION_PANEL_AVAILABLE = False
