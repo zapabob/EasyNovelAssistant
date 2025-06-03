@@ -1,6 +1,13 @@
 import time
+import sys
+import os
 
-from job_queue import JobQueue
+# パス設定
+current_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.dirname(current_dir)
+sys.path.insert(0, src_dir)
+
+from utils.job_queue import JobQueue
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QComboBox, QLineEdit, QPushButton, QLabel
 
 

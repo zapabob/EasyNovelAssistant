@@ -1,0 +1,77 @@
+name: Import Test CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  import-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pytest numpy torch tqdm
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    
+    - name: Run import tests
+      run: |
+        python -m pytest tests/test_imports.py -v
+    
+    - name: Test package structure
+      run: |
+        python -c "
+        import sys, os
+        sys.path.insert(0, 'src')
+        
+        # パッケージの基本構造テスト
+        import src
+        print('✅ src package import: OK')
+        
+        import src.utils
+        print('✅ src.utils package import: OK')
+        
+        import src.models
+        print('✅ src.models package import: OK')
+        
+        import src.integration
+        print('✅ src.integration package import: OK')
+        
+        print('🎉 All package imports successful!')
+        "
+    
+    - name: Test critical imports
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+        
+        try:
+            from src.utils.job_queue import JobQueue
+            print('✅ JobQueue import: OK')
+        except ImportError as e:
+            print(f'❌ JobQueue import failed: {e}')
+            sys.exit(1)
+        
+        try:
+            from src.models.generator import Generator
+            print('✅ Generator import: OK')
+        except ImportError as e:
+            print(f'❌ Generator import failed: {e}')
+            sys.exit(1)
+        
+        print('🎉 Critical imports test passed!')
+        " 
