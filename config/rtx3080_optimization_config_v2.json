@@ -1,0 +1,253 @@
+{
+  "version": "v2.0",
+  "description": "RTX3080最適化設定 v2 - 反復抑制システム80%+対応",
+  "last_updated": "2024-12-24",
+  "target_success_rate": 0.8,
+  
+  "hardware_optimization": {
+    "gpu_model": "RTX3080",
+    "vram_limit_gb": 10,
+    "cuda_version": "11.8+",
+    "recommended_batch_size": 8,
+    "fp16_enabled": true,
+    "tensor_parallel": false
+  },
+  
+  "nkat_parameters": {
+    "theta_rank": 6,
+    "theta_gamma": 0.98,
+    "expression_boost_level": 70,
+    "consistency_weight": 0.85,
+    "diversity_target": 0.35,
+    "style_variation_boost": true
+  },
+  
+  "repetition_suppression_v2": {
+    "enabled": true,
+    "min_repeat_threshold": 1,
+    "max_distance": 50,
+    "similarity_threshold": 0.5,
+    "phonetic_threshold": 0.7,
+    "enable_aggressive_mode": true,
+    "interjection_sensitivity": 0.3,
+    "exact_match_priority": true,
+    "character_repetition_limit": 2,
+    
+    "v2_features": {
+      "debug_mode": true,
+      "ngram_block_size": 3,
+      "enable_drp": false,
+      "drp_alpha": 0.3,
+      "drp_window": 10,
+      "use_jaccard_similarity": false,
+      "mecab_integration": false
+    },
+    
+    "adaptive_settings": {
+      "success_rate_threshold": 0.8,
+      "auto_tune_enabled": true,
+      "fallback_on_failure": true,
+      "performance_monitoring": true
+    }
+  },
+  
+  "quality_guard": {
+    "enabled": true,
+    "auto_correction_threshold": 0.03,
+    "diversity_target": 0.35,
+    "gamma_adjustment_step": 0.01,
+    "over_compression_protection": true,
+    "poetry_protection_mode": true
+  },
+  
+  "continuous_learning": {
+    "enabled": true,
+    "feedback_db_path": "data/feedback_v2.db",
+    "lora_training_enabled": true,
+    "metrics_tracking": true,
+    "training_schedule": "weekly",
+    "batch_size": 8,
+    "learning_rate": 1e-5,
+    "lora_rank": 16,
+    "success_rate_target": 0.8
+  },
+  
+  "performance_targets": {
+    "repetition_suppression_success_rate": 0.8,
+    "processing_time_ms_max": 150,
+    "detection_miss_rate_max": 0.15,
+    "over_compression_rate_max": 0.05,
+    "overall_quality_score": 0.85
+  },
+  
+  "operational_modes": {
+    "development": {
+      "debug_verbose": true,
+      "test_cases_enabled": true,
+      "performance_logging": true,
+      "auto_tuning_aggressive": true
+    },
+    "production": {
+      "debug_verbose": false,
+      "silent_mode": false,
+      "performance_monitoring": true,
+      "auto_tuning_conservative": true
+    },
+    "testing": {
+      "comprehensive_tests": true,
+      "benchmark_mode": true,
+      "metrics_collection": true,
+      "comparison_enabled": true
+    }
+  },
+  
+  "model_specific_settings": {
+    "kobold_cpp": {
+      "temperature": 0.8,
+      "top_p": 0.92,
+      "repeat_penalty": 1.08,
+      "top_k": 50,
+      "tfs_z": 0.97,
+      "typical_p": 0.95,
+      "mirostat": 0,
+      "mirostat_tau": 5.0,
+      "mirostat_eta": 0.1
+    },
+    "llama_cpp": {
+      "n_ctx": 4096,
+      "n_batch": 512,
+      "n_threads": 6,
+      "n_gpu_layers": 35,
+      "use_mmap": true,
+      "use_mlock": false
+    }
+  },
+  
+  "tuning_profiles": {
+    "success_80_percent": {
+      "description": "80%成功率達成の実証済み設定",
+      "similarity_threshold": 0.5,
+      "phonetic_threshold": 0.7,
+      "max_distance": 50,
+      "min_repeat_threshold": 1,
+      "interjection_sensitivity": 0.3,
+      "character_repetition_limit": 2,
+      "ngram_block_size": 3,
+      "enable_drp": false,
+      "use_jaccard_similarity": false,
+      "enable_aggressive_mode": true,
+      "exact_match_priority": true,
+      "debug_mode": true,
+      "verified_success_rate": 0.8,
+      "test_date": "2025-01-06",
+      "recommended_for": "production"
+    },
+    "ultra_strict": {
+      "description": "最大80%+を狙う超厳格設定",
+      "similarity_threshold": 0.6,
+      "ngram_block_size": 5,
+      "drp_alpha": 0.6,
+      "character_repetition_limit": 2,
+      "expected_success_rate": 0.85
+    },
+    "balanced_v2": {
+      "description": "バランス重視のv2設定",
+      "similarity_threshold": 0.68,
+      "ngram_block_size": 4,
+      "drp_alpha": 0.5,
+      "character_repetition_limit": 3,
+      "expected_success_rate": 0.8
+    },
+    "performance_first": {
+      "description": "処理速度優先設定",
+      "similarity_threshold": 0.75,
+      "ngram_block_size": 3,
+      "drp_alpha": 0.3,
+      "character_repetition_limit": 4,
+      "expected_success_rate": 0.75
+    },
+    "dialect_specialized": {
+      "description": "関西弁等方言特化設定",
+      "similarity_threshold": 0.65,
+      "ngram_block_size": 4,
+      "phonetic_threshold": 0.75,
+      "dialect_patterns_enhanced": true,
+      "expected_success_rate": 0.82
+    }
+  },
+  
+  "monitoring_and_alerts": {
+    "success_rate_alerts": {
+      "threshold": 0.75,
+      "window_size": 20,
+      "alert_on_decline": true
+    },
+    "performance_alerts": {
+      "max_processing_time_ms": 200,
+      "memory_usage_threshold": 0.8,
+      "alert_on_exceed": true
+    },
+    "quality_alerts": {
+      "over_compression_threshold": 0.1,
+      "detection_miss_threshold": 0.2,
+      "immediate_alert": true
+    }
+  },
+  
+  "experimental_features": {
+    "mecab_integration": {
+      "enabled": false,
+      "dictionary_path": "/usr/lib/mecab/dic/ipadic",
+      "feature_level": "baseform"
+    },
+    "semantic_similarity": {
+      "enabled": false,
+      "model_path": "sentence-transformers/distilbert-base-multilingual-cased",
+      "threshold": 0.85
+    },
+    "context_aware_suppression": {
+      "enabled": false,
+      "context_window": 200,
+      "importance_weighting": true
+    }
+  },
+  
+  "troubleshooting": {
+    "common_issues": {
+      "low_success_rate": {
+        "solution": "similarity_threshold を 0.65 以下に下げる",
+        "alternative": "ngram_block_size を 5-6 に上げる"
+      },
+      "over_compression": {
+        "solution": "character_repetition_limit を 4-5 に上げる",
+        "alternative": "enable_aggressive_mode を false に"
+      },
+      "slow_processing": {
+        "solution": "debug_mode を false に",
+        "alternative": "drp を無効化"
+      }
+    },
+    "performance_baseline": {
+      "target_80_percent_config": "success_80_percent",
+      "fallback_config": "balanced_v2",
+      "emergency_config": "success_80_percent"
+    }
+  },
+  
+  "changelog": {
+    "v2.0": [
+      "デバッグ強化機能追加",
+      "n-gramブロック機能追加", 
+      "動的Repeat-Penalty追加",
+      "Jaccard類似度サポート",
+      "成功率80%+対応チューニング",
+      "方言対応強化",
+      "詩的表現保護機能"
+    ],
+    "v1.0": [
+      "基本反復抑制機能",
+      "RTX3080最適化",
+      "NKAT統合"
+    ]
+  }
+} 

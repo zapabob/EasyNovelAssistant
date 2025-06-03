@@ -1,0 +1,6 @@
+﻿{
+	"キャラ・ユーザーの名前": "キャラ: {char_name}\nユーザー: {user_name}\n",
+	"主人公・相方の名前": "主人公: {user_name}\n相方: {char_name}\n",
+	"受け・攻めの名前": "受け: {char_name}\n攻め: {user_name}\n",
+	"キャラ画像生成用プロンプト（実験的）": "最後に{char_name}の外見上の特徴をAI画像出力の為のプロンプトとして表示してください。\n黒髪猫耳メイドのプロンプト例: 1girl, black hair, black eyes, maid costume, cat ears"
+}

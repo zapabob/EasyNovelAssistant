@@ -1,0 +1,245 @@
+{
+  "timestamp": "2025-06-03T06:15:45.201207",
+  "gpu_info": {
+    "detected": true,
+    "name": "NVIDIA GeForce RTX 3080",
+    "memory_total": 9,
+    "memory_free": 8,
+    "compute_capability": "8.6",
+    "driver_version": "576.52",
+    "cuda_version": "12.1"
+  },
+  "is_rtx3080": true,
+  "optimization_8b": {
+    "gpu_optimization": {
+      "enabled": true,
+      "tensor_cores": true,
+      "mixed_precision": true,
+      "cuda_graphs": true,
+      "gpu_layers": 28,
+      "max_seq_len": 8192,
+      "threads": 16,
+      "batch_size": 6
+    },
+    "memory_optimization": {
+      "enabled": true,
+      "vram_total": 9,
+      "vram_target": 7,
+      "memory_growth": true,
+      "cache_optimization": true,
+      "garbage_collection": true,
+      "memory_mapping": true,
+      "swap_prevention": true
+    },
+    "model_optimization": {
+      "recommended_quantization": "Q4_K_M",
+      "max_context": 8192,
+      "rope_freq_base": 10000,
+      "rope_freq_scale": 1.0,
+      "model_size": "8B",
+      "optimization_target": "speed_quality_balance"
+    },
+    "cuda_optimization": {
+      "enabled": true,
+      "cuda_version": "12.1",
+      "compute_capability": "8.6",
+      "tensor_cores": true,
+      "cudnn_benchmark": true,
+      "cudnn_deterministic": false,
+      "cuda_streams": 4,
+      "memory_pool": true,
+      "jit_compilation": true
+    },
+    "quantization": {
+      "enabled": true,
+      "default_type": "Q4_K_M",
+      "supported_types": [
+        "Q4_K_M",
+        "Q4_K_S",
+        "Q5_K_M",
+        "Q6_K",
+        "Q8_0",
+        "Q3_K_M"
+      ],
+      "adaptive": true,
+      "calibration": true,
+      "optimization_target": "inference_speed"
+    },
+    "performance_prediction": {
+      "tokens_per_second": 40.0,
+      "memory_usage_gb": 7.2,
+      "power_draw_w": 285,
+      "temperature_target_c": 79,
+      "model_size": "8B",
+      "optimization_level": "RTX3080_optimized",
+      "confidence": 0.85
+    }
+  },
+  "optimization_7b": {
+    "gpu_optimization": {
+      "enabled": true,
+      "tensor_cores": true,
+      "mixed_precision": true,
+      "cuda_graphs": true,
+      "gpu_layers": 28,
+      "max_seq_len": 8192,
+      "threads": 16,
+      "batch_size": 6
+    },
+    "memory_optimization": {
+      "enabled": true,
+      "vram_total": 9,
+      "vram_target": 7,
+      "memory_growth": true,
+      "cache_optimization": true,
+      "garbage_collection": true,
+      "memory_mapping": true,
+      "swap_prevention": true
+    },
+    "model_optimization": {
+      "recommended_quantization": "Q4_K_M",
+      "max_context": 8192,
+      "rope_freq_base": 10000,
+      "rope_freq_scale": 1.0,
+      "model_size": "7B",
+      "optimization_target": "speed_quality_balance"
+    },
+    "cuda_optimization": {
+      "enabled": true,
+      "cuda_version": "12.1",
+      "compute_capability": "8.6",
+      "tensor_cores": true,
+      "cudnn_benchmark": true,
+      "cudnn_deterministic": false,
+      "cuda_streams": 4,
+      "memory_pool": true,
+      "jit_compilation": true
+    },
+    "quantization": {
+      "enabled": true,
+      "default_type": "Q4_K_M",
+      "supported_types": [
+        "Q4_K_M",
+        "Q4_K_S",
+        "Q5_K_M",
+        "Q6_K",
+        "Q8_0",
+        "Q3_K_M"
+      ],
+      "adaptive": true,
+      "calibration": true,
+      "optimization_target": "inference_speed"
+    },
+    "performance_prediction": {
+      "tokens_per_second": 42.0,
+      "memory_usage_gb": 6.5,
+      "power_draw_w": 280,
+      "temperature_target_c": 78,
+      "model_size": "7B",
+      "optimization_level": "RTX3080_optimized",
+      "confidence": 0.85
+    }
+  },
+  "optimization_13b": {
+    "gpu_optimization": {
+      "enabled": true,
+      "tensor_cores": true,
+      "mixed_precision": true,
+      "cuda_graphs": true,
+      "gpu_layers": 28,
+      "max_seq_len": 8192,
+      "threads": 16,
+      "batch_size": 6
+    },
+    "memory_optimization": {
+      "enabled": true,
+      "vram_total": 9,
+      "vram_target": 7,
+      "memory_growth": true,
+      "cache_optimization": true,
+      "garbage_collection": true,
+      "memory_mapping": true,
+      "swap_prevention": true
+    },
+    "model_optimization": {
+      "recommended_quantization": "Q4_K_S",
+      "max_context": 4096,
+      "rope_freq_base": 10000,
+      "rope_freq_scale": 1.0,
+      "model_size": "13B",
+      "optimization_target": "speed_quality_balance"
+    },
+    "cuda_optimization": {
+      "enabled": true,
+      "cuda_version": "12.1",
+      "compute_capability": "8.6",
+      "tensor_cores": true,
+      "cudnn_benchmark": true,
+      "cudnn_deterministic": false,
+      "cuda_streams": 4,
+      "memory_pool": true,
+      "jit_compilation": true
+    },
+    "quantization": {
+      "enabled": true,
+      "default_type": "Q4_K_M",
+      "supported_types": [
+        "Q4_K_M",
+        "Q4_K_S",
+        "Q5_K_M",
+        "Q6_K",
+        "Q8_0",
+        "Q3_K_M"
+      ],
+      "adaptive": true,
+      "calibration": true,
+      "optimization_target": "inference_speed"
+    },
+    "performance_prediction": {
+      "tokens_per_second": 28.0,
+      "memory_usage_gb": 9.8,
+      "power_draw_w": 300,
+      "temperature_target_c": 82,
+      "model_size": "13B",
+      "optimization_level": "RTX3080_optimized",
+      "confidence": 0.85
+    }
+  },
+  "model_loading": {
+    "use_mmap": true,
+    "use_mlock": false,
+    "numa": false,
+    "low_vram": false,
+    "verbose": true,
+    "threads": 16,
+    "n_batch": 6,
+    "n_gpu_layers": 28,
+    "rope_freq_base": 10000.0,
+    "rope_freq_scale": 1.0,
+    "n_ctx": 6144
+  },
+  "performance_stats": {
+    "tokens_per_second": 0.0,
+    "memory_usage": 0.0,
+    "gpu_utilization": 0.0,
+    "temperature": 0.0,
+    "power_draw": 0.0,
+    "timestamp": "2025-06-03T06:15:44.145288",
+    "gpu_detected": true,
+    "is_rtx3080": true,
+    "memory_used_gb": 1.1390380859375,
+    "memory_total_gb": 9.9993896484375,
+    "memory_usage_percent": 11.391076115485564,
+    "gpu_utilization_estimate": 13.669291338582676,
+    "cpu_percent": 6.9,
+    "ram_used_gb": 14.261837005615234,
+    "ram_total_gb": 31.873149871826172,
+    "ram_usage_percent": 44.7,
+    "disk_usage_percent": 89.23434613629718,
+    "gpu_utilization_percent": 2.0,
+    "gpu_memory_used_mb": 1006.0,
+    "gpu_memory_total_mb": 10240.0,
+    "gpu_temperature_c": 59.0,
+    "gpu_power_draw_w": 85.38
+  }
+}

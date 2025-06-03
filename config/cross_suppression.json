@@ -1,0 +1,19 @@
+{
+  "engine_config": {
+    "cross_suppression_threshold": 0.3,
+    "pattern_decay_rate": 0.95,
+    "min_pattern_frequency": 2,
+    "context_influence_weight": 0.4,
+    "character_isolation": true,
+    "session_memory_hours": 24,
+    "adaptive_learning": true,
+    "realtime_updates": true
+  },
+  "cross_patterns": {},
+  "stats": {
+    "patterns_learned": 0,
+    "cross_suppressions_applied": 0,
+    "sessions_tracked": 0,
+    "contexts_remembered": 2
+  }
+}

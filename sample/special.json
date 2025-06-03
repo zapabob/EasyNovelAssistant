@@ -1,0 +1,19 @@
+﻿{
+	"ゴールシークの記事": "https://note.com/kagami_kami/n/n3a321d926684",
+	"作例: ラバーフェチ女医とアスリートJKの秘密の治療院": "https://www.pixiv.net/novel/show.php?id=22071258",
+	"作例: 催眠アプリでおじさん専属バニーガール性奴隷になるJK": "https://www.pixiv.net/novel/show.php?id=22104280",
+	"(New!) 作例: 淫魔のボンデージで爆乳化した妹がお兄ちゃんに年齢退行ミルクを飲ませてバブらせる話": "https://www.pixiv.net/novel/show.php?id=22162676",
+	"テンプレ: 小説企画からプロッティング": "https://github.com/kgmkm/goalseek_ad/raw/main/init_editor.txt",
+	"テンプレ: 生成した設定とプロットで執筆": "https://github.com/kgmkm/goalseek_ad/raw/main/init_writer.txt",
+	"テンプレ: 画像生成プロンプト(Ninja, JapaneseStarling)": "https://github.com/kgmkm/goalseek_ad/raw/main/init_imager.txt",
+	"ゴールシークのリポジトリ": "https://github.com/kgmkm/goalseek_ad",
+	"NSFW ノベルズ (SniffyOtter-7B-Novel-Writing-NSFW)/SniffyOtter-7B-Novel-Writing-NSFW の説明": "https://huggingface.co/Aratako/SniffyOtter-7B-Novel-Writing-NSFW",
+	"NSFW ノベルズ (SniffyOtter-7B-Novel-Writing-NSFW)/テンプレ: SniffyOtter-7B-Novel-Writing-NSFW": "[INST] あなたはプロの小説家です。次のキーワードやジャンルなどの情報から小説を生成してください。[以降の説明部分は削除] ジャンルは一つ選択、クォリティと過激さは0-3、キーワードはジャンル指定した R18 なろうのキーワードを指定します。\nジャンル：男性向け、女性向け、BL、大人向け\nクオリティ：3\nキーワード：男主人公、現代、ハーレム\n過激さ：3 [/INST]",
+	"NSFW ノベルズ (SniffyOtter-7B-Novel-Writing-NSFW)/サンプル: 女子中学生、ロリ、レイプ、誘拐、巨根、絶倫": "[INST] あなたはプロの小説家です。次のキーワードやジャンルなどの情報から小説を生成してください。\nジャンル：男性向け\nクオリティ：2\nキーワード：女子中学生、ロリ、レイプ、誘拐、巨根、絶倫\n過激さ：3 [/INST]",
+	"NSFW ノベルズ (SniffyOtter-7B-Novel-Writing-NSFW)/サンプル: ふたなり、巨根、絶倫、百合、レズ": "[INST] あなたはプロの小説家です。次のキーワードやジャンルなどの情報から小説を生成してください。\nジャンル：男性向け\nクオリティ：3\nキーワード：ふたなり、巨根、絶倫、百合、レズ\n過激さ：3 [/INST]",
+	"NSFW ノベルズ (SniffyOtter-7B-Novel-Writing-NSFW)/サンプル: ボーイズラブ、ファンタジー、悪魔、美形": "[INST] あなたはプロの小説家です。次のキーワードやジャンルなどの情報から小説を生成してください。\nジャンル：BL\nクオリティ：2\nキーワード：ふたなり、巨根、絶倫、百合、レズ\n過激さ：2 [/INST]",
+	"ノベルズ (Antler-7B-Novel-Writing)/Antler-7B-Novel-Writing の説明": "https://huggingface.co/Aratako/Antler-7B-Novel-Writing",
+	"ノベルズ (Antler-7B-Novel-Writing)/テンプレ: Antler-7B-Novel-Writing-R15": "[INST] あなたのタスクは小説を書くことです。ユーザーが以下で示す設定から適切な小説を書いてください。[以降の説明部分は削除] ジャンルは一つ選択、クォリティは 0-3、キーワードは『小説家になろう』のキーワード、年齢区分は全年齢なら 0 で R15 なら 1 を指定します。\nジャンル：未選択〔未選択〕、異世界〔恋愛〕、現実世界〔恋愛〕、ハイファンタジー〔ファンタジー〕、ローファンタジー〔ファンタジー〕、純文学〔文芸〕、ヒューマンドラマ〔文芸〕、歴史〔文芸〕、推理〔文芸〕、ホラー〔文芸〕、アクション〔文芸〕、コメディー〔文芸〕、VRゲーム〔SF〕、宇宙〔SF〕、空想科学〔SF〕、パニック〔SF〕、童話〔その他〕、詩〔その他〕、エッセイ〔その他〕、リプレイ〔その他〕、その他〔その他〕、ノンジャンル〔ノンジャンル〕\nクオリティ：3\nキーワード：男主人公、冒険、魔法\n年齢区分：1 [/INST]",
+	"ノベルズ (Antler-7B-Novel-Writing)/サンプル: ハイファンタジー〔ファンタジー〕": "[INST] あなたのタスクは小説を書くことです。ユーザーが以下で示す設定から適切な小説を書いてください。\nジャンル：ハイファンタジー〔ファンタジー〕\nクオリティ：2\nキーワード：R15、残酷な描写あり、ギャグ、女主人公、魔王、魔法、主人公最強、転生\n年齢区分：1 [/INST]",
+	"ノベルズ (Antler-7B-Novel-Writing)/テンプレ: Antler-7B-Novel-Writing-R18": "[INST] あなたのタスクは小説を書くことです。ユーザーが以下で示す設定から適切な小説を書いてください。[以降の説明部分は削除] ジャンルは一つ選択、クォリティは 0-3、キーワードはジャンルで選んだ R18 なろうのキーワード、年齢区分は 2。\nジャンル：男性向け、女性向け、BL、大人向け\nクオリティ：3\nキーワード：男主人公、現代、ハーレム\n年齢区分：2 [/INST]"
+}

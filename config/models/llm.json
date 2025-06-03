@@ -1,0 +1,52 @@
+﻿{
+    "Vecteus-v1-IQ4_XS": {
+        "file_name": "Vecteus-v1-IQ4_XS.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Ninja-V3-Q4_K_M": {
+        "file_name": "Ninja-V3-Q4_K_M.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 32768
+    },
+    "Qwen3-8B-ERP-v0.1.i1-Q6_K": {
+        "file_name": "Qwen3-8B-ERP-v0.1.i1-Q6_K.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Vecteus-v1-IQ4_XS_nkat": {
+        "file_name": "Vecteus-v1-IQ4_XS_nkat.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Qwen3-8B-ERP-v0.1.i1-Q6_K_nkat_enhanced": {
+        "file_name": "Qwen3-8B-ERP-v0.1.i1-Q6_K_nkat_enhanced.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf_download=true": {
+        "file_name": "Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf_download=true.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Aratako.Qwen3-8B-NSFW-JP.Q2_K_nkat_enhanced": {
+        "file_name": "Aratako.Qwen3-8B-NSFW-JP.Q2_K_nkat_enhanced.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf_download=true_backup_nkat_enhanced": {
+        "file_name": "Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf_download=true_backup_nkat_enhanced.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Vecteus-v1-IQ4_XS_nkat_enhanced": {
+        "file_name": "Vecteus-v1-IQ4_XS_nkat_enhanced.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    },
+    "Qwen3-8B-ERP-v0.1.i1-Q6_K_safe_enhanced_20250602_082659": {
+        "file_name": "Qwen3-8B-ERP-v0.1.i1-Q6_K_safe_enhanced_20250602_082659.gguf",
+        "max_gpu_layer": 33,
+        "context_size": 4096
+    }
+}

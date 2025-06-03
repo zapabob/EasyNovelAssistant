@@ -1,0 +1,37 @@
+{
+  "kobold_settings": {
+    "auto_update": true,
+    "update_check_interval": "daily",
+    "backup_count": 5,
+    "download_timeout": 300,
+    "verify_downloads": true,
+    "use_prerelease": false
+  },
+  "github_config": {
+    "repository": "LostRuins/koboldcpp",
+    "api_base_url": "https://api.github.com/repos/LostRuins/koboldcpp",
+    "preferred_assets": [
+      "koboldcpp.exe",
+      "koboldcpp_cu12.exe",
+      "koboldcpp_nocuda.exe"
+    ]
+  },
+  "paths": {
+    "kobold_directory": "KoboldCpp",
+    "backup_directory": "KoboldCpp/backups",
+    "log_directory": "logs",
+    "temp_directory": "temp"
+  },
+  "notifications": {
+    "enabled": true,
+    "update_available": true,
+    "update_complete": true,
+    "update_failed": true
+  },
+  "version_info": {
+    "last_check": null,
+    "current_version": null,
+    "last_update": null,
+    "update_history": []
+  }
+} 

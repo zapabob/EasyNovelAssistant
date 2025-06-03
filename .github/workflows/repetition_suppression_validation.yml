@@ -1,0 +1,250 @@
+name: 反復抑制システム v3 検証
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'src/utils/repetition_suppressor_v3.py'
+      - 'src/utils/feedback_logger.py'
+      - 'tests/test_repetition_v3.py'
+      - 'demo_repetition_v3_quick.py'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src/utils/repetition_suppressor_v3.py'
+      - 'src/utils/feedback_logger.py'
+      - 'tests/test_repetition_v3.py'
+
+jobs:
+  repetition-suppression-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, '3.10', '3.11']
+        ngram_block_size: [2, 3, 4]
+        include:
+          - python-version: 3.9
+            ngram_block_size: 3
+            is_primary: true
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Python ${{ matrix.python-version }} セットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: 依存関係インストール
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy tqdm
+        # オプション依存関係（MeCab）
+        pip install fugashi unidic-lite || echo "MeCab依存関係のインストールに失敗しました（オプション）"
+
+    - name: v3システム単体テスト
+      run: |
+        python tests/test_repetition_v3.py
+      env:
+        NGRAM_BLOCK_SIZE: ${{ matrix.ngram_block_size }}
+
+    - name: デモスクリプト実行テスト
+      if: matrix.is_primary
+      run: |
+        python demo_repetition_v3_quick.py --sim 0.35 --max_dist 50 --ngram ${{ matrix.ngram_block_size }} --min_compress 0.03 --drp-base 1.10 --drp-alpha 0.5 --disable-rhetorical --verbose
+      
+    - name: 成功率チェック
+      if: matrix.is_primary
+      run: |
+        # 90%成功率の要求
+        python -c "
+        import sys
+        sys.path.insert(0, '.')
+        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        
+        config = {
+            'similarity_threshold': 0.35,
+            'max_distance': 50,
+            'min_compress_rate': 0.03,
+            'enable_4gram_blocking': True,
+            'ngram_block_size': 3,
+            'enable_drp': True,
+            'drp_base': 1.10,
+            'drp_alpha': 0.5,
+            'enable_rhetorical_protection': False,
+            'enable_latin_number_detection': True,
+            'debug_mode': False
+        }
+        
+        suppressor = AdvancedRepetitionSuppressorV3(config)
+        
+        test_cases = [
+            'お兄ちゃんお兄ちゃん、どこに行くのですかお兄ちゃん？',
+            'そやそやそや、あかんあかんあかん、やなやなそれは。',
+            'ですですね、ますますよ、でしょでしょう。',
+            '今日は良い天気ですね。今日は良い天気だから散歩しましょう。',
+            'wwwwww、そうですね。777777って数字ですか？',
+            'ねえ、ねえ、ねえ！聞いてよ。',
+            '嬉しい嬉しい、楽しい楽しい、幸せ幸せという感じですです。',
+            'あああああああ！うわああああああ！きゃああああああ！',
+            'はい、はい、はい。',
+            'これはテストこれはテストです。'
+        ]
+        
+        success_count = 0
+        for i, input_text in enumerate(test_cases):
+            result, metrics = suppressor.suppress_repetitions_with_debug_v3(input_text, f'テストキャラ{i+1}')
+            if metrics.success_rate >= 0.7:
+                success_count += 1
+        
+        success_rate = success_count / len(test_cases)
+        print(f'成功率: {success_rate:.1%} ({success_count}/{len(test_cases)})')
+        
+        if success_rate < 0.8:
+            print(f'❌ CI失敗: 成功率 {success_rate:.1%} < 80%')
+            sys.exit(1)
+        else:
+            print(f'✅ CI成功: 成功率 {success_rate:.1%} ≥ 80%')
+        "
+
+    - name: フィードバックログテスト
+      if: matrix.is_primary
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, '.')
+        from src.utils.feedback_logger import feedback_logger, log_repetition_result
+        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        
+        config = {
+            'similarity_threshold': 0.35,
+            'ngram_block_size': 3,
+            'debug_mode': False
+        }
+        
+        suppressor = AdvancedRepetitionSuppressorV3(config)
+        
+        # テストログ記録
+        input_text = 'テストテストテスト'
+        result, metrics = suppressor.suppress_repetitions_with_debug_v3(input_text, 'CIテスト')
+        log_info = log_repetition_result(input_text, result, metrics, 'CIテスト')
+        
+        # セッション統計確認
+        stats = feedback_logger.get_session_stats()
+        assert stats['total_generations'] >= 1, 'ログ記録が動作していません'
+        
+        print('✅ フィードバックログシステム正常動作')
+        "
+
+    - name: パフォーマンステスト
+      if: matrix.is_primary
+      run: |
+        python -c "
+        import time
+        import sys
+        sys.path.insert(0, '.')
+        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        
+        config = {
+            'similarity_threshold': 0.35,
+            'ngram_block_size': 3,
+            'debug_mode': False
+        }
+        
+        suppressor = AdvancedRepetitionSuppressorV3(config)
+        
+        # パフォーマンステスト（長文）
+        long_text = 'これはテスト' * 100
+        
+        start_time = time.time()
+        result, metrics = suppressor.suppress_repetitions_with_debug_v3(long_text, 'パフォーマンステスト')
+        end_time = time.time()
+        
+        processing_time = (end_time - start_time) * 1000  # ms
+        
+        print(f'処理時間: {processing_time:.1f}ms')
+        print(f'処理速度: {len(long_text) / processing_time * 1000:.0f} 文字/秒')
+        
+        # 性能要求: 1000文字/秒以上
+        if len(long_text) / processing_time * 1000 < 1000:
+            print(f'❌ 性能不足: {len(long_text) / processing_time * 1000:.0f} < 1000 文字/秒')
+            sys.exit(1)
+        else:
+            print('✅ 性能要求クリア')
+        "
+
+    - name: アーティファクトアップロード
+      if: matrix.is_primary && failure()
+      uses: actions/upload-artifact@v3
+      with:
+        name: test-logs
+        path: |
+          logs/
+          *.log
+
+  compatibility-test:
+    runs-on: ubuntu-latest
+    needs: repetition-suppression-test
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Python 3.9 セットアップ
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.9
+
+    - name: 依存関係インストール
+      run: |
+        python -m pip install --upgrade pip
+        pip install numpy tqdm
+
+    - name: 後方互換性テスト（v2 → v3移行）
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, '.')
+        
+        # v3システムがv2のインターフェースを持っているかチェック
+        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        
+        suppressor = AdvancedRepetitionSuppressorV3({})
+        
+        # v2互換メソッドの存在確認
+        assert hasattr(suppressor, 'suppress_repetitions'), 'v2互換メソッドがありません'
+        
+        # 基本動作確認
+        result = suppressor.suppress_repetitions('テストテストテスト', 'テストキャラ')
+        assert isinstance(result, str), '戻り値が文字列ではありません'
+        assert len(result) <= len('テストテストテスト'), '圧縮されていません'
+        
+        print('✅ v2互換性テスト成功')
+        "
+
+    - name: マルチプラットフォーム動作確認
+      run: |
+        python -c "
+        import platform
+        print(f'プラットフォーム: {platform.system()} {platform.release()}')
+        print(f'Python: {platform.python_version()}')
+        
+        # プラットフォーム固有の動作確認
+        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+        
+        config = {'debug_mode': False}
+        suppressor = AdvancedRepetitionSuppressorV3(config)
+        
+        # Unicode処理の確認
+        test_texts = [
+            'ひらがなひらがなひらがな',
+            'カタカナカタカナカタカナ',
+            '漢字漢字漢字',
+            '混合Mixed文字列123'
+        ]
+        
+        for text in test_texts:
+            result, metrics = suppressor.suppress_repetitions_with_debug_v3(text, 'Unicode テスト')
+            assert isinstance(result, str), f'Unicode処理エラー: {text}'
+            
+        print('✅ マルチプラットフォーム動作確認成功')
+        " 

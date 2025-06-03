@@ -1,0 +1,6 @@
+{
+  "nkat_enabled": true,
+  "theta_rank": 6,
+  "theta_gamma": 0.98,
+  "expression_boost_level": 75
+}
