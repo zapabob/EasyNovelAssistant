@@ -25,6 +25,10 @@ wheels/
 *.egg
 MANIFEST
 
+# Build test directories
+build_test/
+dist_test/
+
 # PyInstaller
 *.manifest
 *.spec
