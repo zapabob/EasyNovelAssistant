@@ -1,42 +1,24 @@
 ﻿import os
 import re
 import time
-import sys
 
 
 class Path:
     path_regex = re.compile(r'[\n\r<>:"/\\|?* ]')
 
-    # EXE化対応: 実行ファイルの場所を基準にパスを設定
-    if hasattr(sys, '_MEIPASS'):  # PyInstaller環境
-        # EXE実行時は一時ディレクトリから実行される
-        exe_dir = os.path.dirname(sys.executable)
-        cwd = exe_dir
-        # PyInstallerのバンドルディレクトリ
-        bundle_dir = sys._MEIPASS
-        app = os.path.join(bundle_dir, "EasyNovelAssistant")
-    else:
-        # 通常のPython実行環境
-        cwd = os.getcwd()
-        app = os.path.join(cwd, "EasyNovelAssistant")
-
+    cwd = os.getcwd()
     config = os.path.join(cwd, "config.json")
     llm = os.path.join(cwd, "llm.json")
     llm_sequence = os.path.join(cwd, "llm_sequence.json")
 
+    app = os.path.join(cwd, "EasyNovelAssistant")
     setup = os.path.join(app, "setup")
     res = os.path.join(setup, "res")
     default_config = os.path.join(res, "default_config.json")
     default_llm = os.path.join(res, "default_llm.json")
     default_llm_sequence = os.path.join(res, "default_llm_sequence.json")
 
-    # KoboldCppのパス（EXE実行時も考慮）
-    if hasattr(sys, '_MEIPASS'):  # PyInstaller環境
-        # EXE実行時はEXEと同じディレクトリのKoboldCppを参照
-        kobold_cpp = os.path.join(cwd, "KoboldCpp")
-    else:
-        kobold_cpp = os.path.join(cwd, "KoboldCpp")
-    
+    kobold_cpp = os.path.join(cwd, "KoboldCpp")
     kobold_cpp_win = os.path.join(kobold_cpp, "koboldcpp.exe")
     kobold_cpp_linux = os.path.join(kobold_cpp, "koboldcpp-linux-x64-cuda1150")
 

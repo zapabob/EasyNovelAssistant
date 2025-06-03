@@ -33,7 +33,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     TORCH_AVAILABLE = False
-    print("⚠️ PyTorch未検出: CPU最適化のみ有効")
+    print("WARNING: PyTorch not detected: CPU optimization only")
 
 try:
     import numpy as np

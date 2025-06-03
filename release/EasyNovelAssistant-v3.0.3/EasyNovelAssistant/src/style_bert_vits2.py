@@ -8,46 +8,7 @@ import numpy as np
 import requests
 from job_queue import JobQueue
 from path import Path
-
-# EXE化対応: scipyの安全なインポート
-SCIPY_AVAILABLE = False
-wavfile = None
-
-try:
-    from scipy.io import wavfile
-    SCIPY_AVAILABLE = True
-    print("INFO: scipy loaded successfully")
-except ImportError as e:
-    print(f"WARNING: scipy not available - audio processing disabled: {e}")
-    # scipyなしでも動作する代替実装
-    class DummyWavFile:
-        @staticmethod
-        def read(filepath):
-            print(f"WARNING: Cannot read {filepath} - scipy not available")
-            return 44100, np.array([])  # デフォルトサンプルレートと空配列
-        
-        @staticmethod
-        def write(filepath, sample_rate, data):
-            print(f"WARNING: Cannot write {filepath} - scipy not available")
-    
-    wavfile = DummyWavFile()
-except Exception as e:
-    print(f"ERROR: Unexpected error loading scipy: {e}")
-    SCIPY_AVAILABLE = False
-    
-    class DummyWavFile:
-        @staticmethod
-        def read(filepath):
-            print(f"WARNING: Cannot read {filepath} - scipy error")
-            return 44100, np.array([])
-        
-        @staticmethod
-        def write(filepath, sample_rate, data):
-            print(f"WARNING: Cannot write {filepath} - scipy error")
-    
-    wavfile = DummyWavFile()
-
-print(f"INFO: StyleBertVits2 scipy status - Available: {SCIPY_AVAILABLE}")
+from scipy.io import wavfile
 
 
 class StyleBertVits2:
@@ -162,18 +123,11 @@ class StyleBertVits2:
                 with open(wav_path, "wb") as f:
                     f.write(response.content)
 
-                # 無音の付与（scipyが利用可能な場合のみ）
-                try:
-                    if SCIPY_AVAILABLE and wavfile is not None:
-                        sample_rate, data = wavfile.read(wav_path)
-                        silence = np.zeros(int(sample_rate * self.ctx["speech_interval"]))
-                        data_with_silence = np.append(data, silence)
-                        wavfile.write(wav_path, sample_rate, data_with_silence.astype(np.int16))
-                        print(f"INFO: Audio processing with scipy completed")
-                    else:
-                        print(f"INFO: Skipping audio processing - scipy not available")
-                except Exception as e:
-                    print(f"WARNING: Audio processing failed: {e}")
+                # 無音の付与
+                sample_rate, data = wavfile.read(wav_path)
+                silence = np.zeros(int(sample_rate * self.ctx["speech_interval"]))
+                data_with_silence = np.append(data, silence)
+                wavfile.write(wav_path, sample_rate, data_with_silence.astype(np.int16))
 
                 self.play_queue.push(self._play, wav_path=wav_path)
                 print(f"読み上げ {time.perf_counter() - start_time:.2f}秒: {text}")

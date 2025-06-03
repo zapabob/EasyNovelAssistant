@@ -2,36 +2,20 @@
 import os
 import sys
 
-# エンコーディング設定（EXE化対応）
-if hasattr(sys, '_MEIPASS'):  # PyInstaller環境
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-
-# 統合システムv3のインポート（EXE化対応）
+# 統合システムv3のインポート
 current_dir = os.path.dirname(os.path.abspath(__file__))
-project_root = current_dir  # easy_novel_assistant.pyはプロジェクトルート直下にある
+project_root = os.path.dirname(os.path.dirname(current_dir))
 sys.path.insert(0, project_root)
 
-# 統合システムv3の安全なインポート
-ADVANCED_SYSTEMS_AVAILABLE = False
 try:
-    # 依存関係のチェック
-    import torch
-    torch_available = True
-except ImportError:
-    torch_available = False
-
-if torch_available:
-    try:
-        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
-        from src.integration.lora_style_coordinator import LoRAStyleCoordinator, create_default_coordinator
-        from src.integration.cross_suppression_engine import CrossSuppressionEngine, create_default_cross_engine
-        ADVANCED_SYSTEMS_AVAILABLE = True
-        print("SUCCESS: Advanced systems v3 loaded")
-    except ImportError as e:
-        ADVANCED_SYSTEMS_AVAILABLE = False
-        print(f"WARNING: Advanced systems v3 load failed: {e}")
-else:
-    print("INFO: PyTorch not available - running in basic mode")
+    from utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
+    from integration.lora_style_coordinator import LoRAStyleCoordinator, create_default_coordinator
+    from integration.cross_suppression_engine import CrossSuppressionEngine, create_default_cross_engine
+    ADVANCED_SYSTEMS_AVAILABLE = True
+    print("✅ 統合システムv3 読み込み成功")
+except ImportError as e:
+    ADVANCED_SYSTEMS_AVAILABLE = False
+    print(f"⚠️ 統合システムv3 読み込み失敗: {e}")
 
 # EasyNovelAssistant/src内のモジュールインポート
 src_dir = os.path.dirname(os.path.abspath(__file__))
@@ -61,16 +45,8 @@ class EasyNovelAssistant:
         self.ctx.form = Form(self.ctx)
         self.ctx.generator = Generator(self.ctx)
 
-        # 統合システムv3の初期化（利用可能な場合のみ）
-        if ADVANCED_SYSTEMS_AVAILABLE:
-            try:
-                self._initialize_advanced_systems()
-                print("SUCCESS: Advanced systems v3 initialized")
-            except Exception as e:
-                print(f"WARNING: Advanced systems v3 initialization failed: {e}")
-                ADVANCED_SYSTEMS_AVAILABLE = False
-        else:
-            print("INFO: Running in basic mode - advanced systems disabled")
+        # 統合システムv3の初期化
+        self._initialize_advanced_systems()
 
         # TODO: 起動時引数でのフォルダ・ファイル読み込み
         self.ctx.form.input_area.open_tab(self.ctx["input_text"])  # 書き出しは Form の finalize
@@ -79,69 +55,87 @@ class EasyNovelAssistant:
 
     def _initialize_advanced_systems(self):
         """統合システムv3の初期化"""
-        # 統合システム設定
-        self.integration_config = {
-            'repetition_v3': {
-                'similarity_threshold': 0.35,
-                'max_distance': 50,
-                'min_compress_rate': 0.03,
-                'enable_4gram_blocking': True,
-                'ngram_block_size': 3,
-                'enable_drp': True,
-                'drp_base': 1.10,
-                'drp_alpha': 0.5,
-                'enable_mecab_normalization': False,
-                'enable_rhetorical_protection': True,
-                'enable_latin_number_detection': True,
-                'debug_mode': False
-            },
-            'lora_coordination': {
-                'style_weight_influence': 0.3,
-                'dynamic_adjustment': True,
-                'adaptive_threshold': True,
-                'character_memory': True,
-                'realtime_feedback': True
-            },
-            'cross_suppression': {
-                'cross_suppression_threshold': 0.3,
-                'pattern_decay_rate': 0.95,
-                'min_pattern_frequency': 2,
-                'context_influence_weight': 0.4,
-                'character_isolation': True,
-                'session_memory_hours': 24,
-                'adaptive_learning': True,
-                'realtime_updates': True
+        if not ADVANCED_SYSTEMS_AVAILABLE:
+            print("⚠️ 統合システムv3は利用できません")
+            return
+
+        try:
+            # 統合システム設定
+            self.integration_config = {
+                'repetition_v3': {
+                    'similarity_threshold': 0.35,
+                    'max_distance': 50,
+                    'min_compress_rate': 0.03,
+                    'enable_4gram_blocking': True,
+                    'ngram_block_size': 3,
+                    'enable_drp': True,
+                    'drp_base': 1.10,
+                    'drp_alpha': 0.5,
+                    'enable_mecab_normalization': False,
+                    'enable_rhetorical_protection': True,
+                    'enable_latin_number_detection': True,
+                    'debug_mode': False
+                },
+                'lora_coordination': {
+                    'style_weight_influence': 0.3,
+                    'dynamic_adjustment': True,
+                    'adaptive_threshold': True,
+                    'character_memory': True,
+                    'realtime_feedback': True
+                },
+                'cross_suppression': {
+                    'cross_suppression_threshold': 0.3,
+                    'pattern_decay_rate': 0.95,
+                    'min_pattern_frequency': 2,
+                    'context_influence_weight': 0.4,
+                    'character_isolation': True,
+                    'session_memory_hours': 24,
+                    'adaptive_learning': True,
+                    'realtime_updates': True
+                }
             }
-        }
 
-        # 1. 反復抑制v3システム
-        self.ctx.repetition_suppressor = AdvancedRepetitionSuppressorV3(
-            self.integration_config['repetition_v3']
-        )
+            # 1. 反復抑制v3システム
+            self.ctx.repetition_suppressor = AdvancedRepetitionSuppressorV3(
+                self.integration_config['repetition_v3']
+            )
 
-        # 2. LoRA協調システム
-        self.ctx.lora_coordinator = create_default_coordinator()
-        self.ctx.lora_coordinator.initialize_systems(self.integration_config['repetition_v3'])
+            # 2. LoRA協調システム
+            self.ctx.lora_coordinator = create_default_coordinator()
+            self.ctx.lora_coordinator.initialize_systems(self.integration_config['repetition_v3'])
 
-        # 3. クロス抑制システム
-        self.ctx.cross_engine = create_default_cross_engine()
-        self.ctx.cross_engine.initialize_systems(
-            self.integration_config['repetition_v3'],
-            self.integration_config['lora_coordination']
-        )
+            # 3. クロス抑制システム
+            self.ctx.cross_engine = create_default_cross_engine()
+            self.ctx.cross_engine.initialize_systems(
+                self.integration_config['repetition_v3'],
+                self.integration_config['lora_coordination']
+            )
 
-        # 統計情報
-        self.ctx.integration_stats = {
-            'total_processed': 0,
-            'total_compression_rate': 0.0,
-            'success_rate_history': [],
-            'character_usage': {},
-            'theta_convergence_rate': 0.0,
-            'bleurt_alternative_score': 0.0
-        }
+            # 統計情報
+            self.ctx.integration_stats = {
+                'total_processed': 0,
+                'total_compression_rate': 0.0,
+                'success_rate_history': [],
+                'character_usage': {},
+                'theta_convergence_rate': 0.0,
+                'bleurt_alternative_score': 0.0
+            }
 
-        # Generatorクラスにインテグレーションを追加
-        self._patch_generator_for_integration()
+            # Generatorクラスにインテグレーションを追加
+            self._patch_generator_for_integration()
+
+            print("🚀 統合システムv3 初期化完了")
+            print("   ├─ 反復抑制v3 ✅")
+            print("   ├─ LoRA協調システム ✅") 
+            print("   ├─ クロス抑制システム ✅")
+            print("   ├─ θ最適化エンジン ✅")
+            print("   └─ BLEURT代替評価 ✅")
+
+        except Exception as e:
+            print(f"❌ 統合システムv3 初期化エラー: {e}")
+            self.ctx.repetition_suppressor = None
+            self.ctx.lora_coordinator = None 
+            self.ctx.cross_engine = None
 
     def _patch_generator_for_integration(self):
         """Generatorクラスに統合システムv3を組み込み"""
@@ -208,10 +202,10 @@ class EasyNovelAssistant:
 
                     # デバッグ情報（統合完了のために出力）
                     if self.integration_config['repetition_v3']['debug_mode']:
-                        print(f"Integration processing complete: {len(result)}->{len(current_text)} "
-                              f"({compression_rate:.1%} compression)")
-                        print(f"   Theta convergence: {self.ctx.integration_stats['theta_convergence_rate']:.1%}")
-                        print(f"   BLEURT alternative: {self.ctx.integration_stats['bleurt_alternative_score']:.1%}")
+                        print(f"🔄 統合処理完了: {len(result)}→{len(current_text)} "
+                              f"({compression_rate:.1%} 圧縮)")
+                        print(f"   θ収束度: {self.ctx.integration_stats['theta_convergence_rate']:.1%}")
+                        print(f"   BLEURT代替: {self.ctx.integration_stats['bleurt_alternative_score']:.1%}")
 
                 # キャラクター使用統計
                 if character_name:
@@ -221,7 +215,7 @@ class EasyNovelAssistant:
                 return current_text
                 
             except Exception as e:
-                print(f"ERROR: Integration processing failed: {e}")
+                print(f"❌ 統合システム処理エラー: {e}")
                 return result
         
         # メソッドの置き換え
@@ -235,7 +229,7 @@ class EasyNovelAssistant:
         self.ctx.style_bert_vits2.update()
         self.ctx.form.input_area.update()
         
-        # 統合システムのメトリクス監視（利用可能な場合のみ）
+        # 統合システムのメトリクス監視（Phase 4目標確認）
         if ADVANCED_SYSTEMS_AVAILABLE and hasattr(self.ctx, 'integration_stats'):
             stats = self.ctx.integration_stats
             
@@ -250,10 +244,10 @@ class EasyNovelAssistant:
                 if (stats['theta_convergence_rate'] >= 0.8 and 
                     stats['bleurt_alternative_score'] >= 0.87 and
                     avg_success_rate >= 0.9):
-                    print("SUCCESS: Phase 4 commercial level targets achieved!")
-                    print(f"   Theta convergence: {stats['theta_convergence_rate']:.1%} >= 80%")
-                    print(f"   BLEURT alternative: {stats['bleurt_alternative_score']:.1%} >= 87%")
-                    print(f"   Success rate: {avg_success_rate:.1%} >= 90%")
+                    print("🎉 Phase 4商用レベル目標達成！")
+                    print(f"   θ収束度: {stats['theta_convergence_rate']:.1%} ≥ 80% ✅")
+                    print(f"   BLEURT代替: {stats['bleurt_alternative_score']:.1%} ≥ 87% ✅")
+                    print(f"   成功率: {avg_success_rate:.1%} ≥ 90% ✅")
         
         self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
 

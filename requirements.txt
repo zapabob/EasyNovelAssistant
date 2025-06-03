@@ -20,6 +20,7 @@ transformers>=4.11.0
 # Audio processing (for TTS)
 librosa>=0.8.0
 soundfile>=0.10.0
+scipy>=1.7.0
 
 # Development dependencies
 pytest>=6.2.0
