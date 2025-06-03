@@ -1,14 +1,9 @@
 ﻿import json
 import os
-import subprocess
-import sys
 import tkinter as tk
 import urllib.request
 import webbrowser
 from urllib.parse import quote
-
-# 親ディレクトリをパスに追加
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from path import Path
 

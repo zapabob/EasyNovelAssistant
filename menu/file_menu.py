@@ -1,16 +1,10 @@
 ﻿import glob
-import json
 import os
 import re
 import shutil
-import sys
 import time
 import tkinter as tk
-import urllib.request
 from tkinter import filedialog, messagebox
-
-# 親ディレクトリをパスに追加
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from path import Path
 

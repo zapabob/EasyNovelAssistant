@@ -1,12 +1,8 @@
 ﻿import os
 import subprocess
-import sys
-from sys import platform
 import tkinter as tk
 import webbrowser
-
-# 親ディレクトリをパスに追加
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from sys import platform
 
 from path import Path
 

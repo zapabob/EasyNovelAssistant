@@ -1,10 +1,6 @@
 ﻿import os
-import sys
 import tkinter as tk
 from tkinter import simpledialog
-
-# 親ディレクトリをパスに追加
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from path import Path
 from model_add_dialog import ModelAddDialog
@@ -28,10 +24,6 @@ class ModelMenu:
 
         # モデル追加メニューを最初に追加
         self.menu.add_command(label="新しいモデルを追加...", command=self.add_model)
-        self.menu.add_separator()
-
-        # モデルファイル修復機能を追加
-        self.menu.add_command(label="破損ファイルをクリーンアップ", command=self.cleanup_files)
         self.menu.add_separator()
 
         def context_label(context_size):
@@ -67,10 +59,6 @@ class ModelMenu:
 
         for llm_name in self.ctx.llm:
             llm = self.ctx.llm[llm_name]
-
-            # file_name キーが存在しない場合はスキップ
-            if "file_name" not in llm:
-                continue
 
             llm_menu = tk.Menu(self.menu, tearoff=False)
             name = llm_name
@@ -116,41 +104,7 @@ class ModelMenu:
         # ダイアログが閉じられた後、コンテキストを再読み込み
         self.ctx.reload_llm_config()
 
-    def cleanup_files(self):
-        """破損したモデルファイルをクリーンアップ"""
-        try:
-            cleanup_count = self.ctx.kobold_cpp.cleanup_corrupted_files()
-            if cleanup_count > 0:
-                simpledialog.messagebox.showinfo(
-                    "クリーンアップ完了", 
-                    f"{cleanup_count}個の破損ファイルを削除しました。", 
-                    parent=self.form.win
-                )
-            else:
-                simpledialog.messagebox.showinfo(
-                    "クリーンアップ完了", 
-                    "削除すべき破損ファイルは見つかりませんでした。", 
-                    parent=self.form.win
-                )
-        except Exception as e:
-            simpledialog.messagebox.showerror(
-                "エラー", 
-                f"クリーンアップ中にエラーが発生しました: {str(e)}", 
-                parent=self.form.win
-            )
-
     def select_model(self, llm_name, gpu_layer):
-        # モデルファイルの事前確認
-        is_valid, message = self.ctx.kobold_cpp.verify_model_file(llm_name)
-        if not is_valid:
-            error_msg = f"モデルファイルに問題があります: {message}\n\n"
-            error_msg += "以下の対処法をお試しください:\n"
-            error_msg += "1. 「破損ファイルをクリーンアップ」を実行\n"
-            error_msg += "2. モデルを再ダウンロード\n"
-            error_msg += "3. 別のモデルを選択"
-            simpledialog.messagebox.showerror("モデルファイルエラー", error_msg, parent=self.form.win)
-            return
-            
         self.ctx["llm_name"] = llm_name
         self.ctx["llm_gpu_layer"] = gpu_layer
         result = self.ctx.kobold_cpp.launch_server()
