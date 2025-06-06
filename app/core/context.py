@@ -98,6 +98,7 @@ class Context:
             "llm_name": "[元祖] LightChatAssistant-TypeB-2x7B-IQ4_XS",
             "llm_gpu_layer": 0,
             "llm_context_size": 4096,
+            "check_interval": 0.2,
             "max_length": 128,
             "temperature": 0.7,
             "top_p": 0.9,
@@ -110,6 +111,8 @@ class Context:
             "typical": 1.0,
             "min_p": 0.0,
             "sampler_order": [6, 0, 1, 3, 4, 2, 5],
+            "koboldcpp_host": "localhost",
+            "koboldcpp_port": 5001,
             "koboldcpp_arg": "",
             "koboldcpp_command_timeout": 10
         }
