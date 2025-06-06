@@ -38,6 +38,7 @@ from app.core.const import Const
 from app.core.context import Context
 from app.core.path import Path
 from app.ui.form import Form
+from app.ui.headless_form import HeadlessForm
 from app.utils.generator import Generator
 from app.integrations.kobold_cpp import KoboldCpp
 from app.integrations.movie_maker import MovieMaker
@@ -48,6 +49,7 @@ class EasyNovelAssistant:
     SLEEP_TIME = 50
 
     def __init__(self):
+        global ADVANCED_SYSTEMS_AVAILABLE
         self.ctx = Context()
         Path.init(self.ctx)
         Const.init(self.ctx)
@@ -55,7 +57,8 @@ class EasyNovelAssistant:
         self.ctx.kobold_cpp = KoboldCpp(self.ctx)
         self.ctx.style_bert_vits2 = StyleBertVits2(self.ctx)
         self.ctx.movie_maker = MovieMaker(self.ctx)
-        self.ctx.form = Form(self.ctx)
+        use_headless = os.environ.get("ENA_HEADLESS") == "1"
+        self.ctx.form = HeadlessForm(self.ctx) if use_headless else Form(self.ctx)
         self.ctx.generator = Generator(self.ctx)
 
         # 統合システムv3の初期化（利用可能な場合のみ）
@@ -70,9 +73,11 @@ class EasyNovelAssistant:
             print("INFO: Running in basic mode - advanced systems disabled")
 
         # TODO: 起動時引数でのフォルダ・ファイル読み込み
-        self.ctx.form.input_area.open_tab(self.ctx["input_text"])  # 書き出しは Form の finalize
+        if self.ctx.form and getattr(self.ctx.form, "input_area", None):
+            self.ctx.form.input_area.open_tab(self.ctx["input_text"])  # 書き出しは Form の finalize
 
-        self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
+        if self.ctx.form and getattr(self.ctx.form, "win", None):
+            self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
 
     def _initialize_advanced_systems(self):
         """統合システムv3の初期化"""
@@ -225,12 +230,14 @@ class EasyNovelAssistant:
         self.ctx.generator._generate = enhanced_generate_with_integration
 
     def run(self):
-        self.ctx.form.run()
+        if self.ctx.form and hasattr(self.ctx.form, "run"):
+            self.ctx.form.run()
 
     def mainloop(self):
         self.ctx.generator.update()
         self.ctx.style_bert_vits2.update()
-        self.ctx.form.input_area.update()
+        if self.ctx.form and getattr(self.ctx.form, "input_area", None):
+            self.ctx.form.input_area.update()
         
         # 統合システムのメトリクス監視（利用可能な場合のみ）
         if ADVANCED_SYSTEMS_AVAILABLE and hasattr(self.ctx, 'integration_stats'):
@@ -252,7 +259,8 @@ class EasyNovelAssistant:
                     print(f"   BLEURT alternative: {stats['bleurt_alternative_score']:.1%} >= 87%")
                     print(f"   Success rate: {avg_success_rate:.1%} >= 90%")
         
-        self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
+        if self.ctx.form and getattr(self.ctx.form, "win", None):
+            self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
 
 
 if __name__ == "__main__":
