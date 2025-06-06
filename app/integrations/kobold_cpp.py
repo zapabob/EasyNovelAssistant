@@ -52,9 +52,9 @@ popd
             llm["name"] = name
 
             # ローカルでの新規追加モデルの場合
-            if "file_name" in llm and "urls" not in llm:
-                llm["urls"] = []
-                llm["info_url"] = ""
+            if "file_name" in llm and ("urls" not in llm or not llm.get("urls")):
+                llm["urls"] = llm.get("urls", [])
+                llm["info_url"] = llm.get("info_url", "")
                 continue
 
             # 既存の配布モデルの場合

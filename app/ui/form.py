@@ -13,14 +13,14 @@ except Exception:  # pragma: no cover - optional dependency
 
 # メニュークラスは存在しない場合に備えてダミー実装を用意
 try:
-    from menu.file_menu import FileMenu
-    from menu.gen_menu import GenMenu
-    from menu.help_menu import HelpMenu
-    from menu.model_menu import ModelMenu
-    from menu.sample_menu import SampleMenu
-    from menu.setting_menu import SettingMenu
-    from menu.speech_menu import SpeechMenu
-    from menu.tool_menu import ToolMenu
+    from app.menu.file_menu import FileMenu
+    from app.menu.gen_menu import GenMenu
+    from app.menu.help_menu import HelpMenu
+    from app.menu.model_menu import ModelMenu
+    from app.menu.sample_menu import SampleMenu
+    from app.menu.setting_menu import SettingMenu
+    from app.menu.speech_menu import SpeechMenu
+    from app.menu.tool_menu import ToolMenu
 except Exception:  # pragma: no cover - optional menus
     class _DummyMenu:
         def __init__(self, *_, **__):
