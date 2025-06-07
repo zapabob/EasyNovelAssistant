@@ -4,7 +4,7 @@ import subprocess
 import time
 from tkinter import filedialog
 
-from path import Path
+from ..core.path import Path
 
 
 class MovieMaker:

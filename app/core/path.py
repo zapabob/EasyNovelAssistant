@@ -24,8 +24,9 @@ class Path:
     llm = os.path.join(cwd, "llm.json")
     llm_sequence = os.path.join(cwd, "llm_sequence.json")
 
-    setup = os.path.join(app, "setup")
-    res = os.path.join(setup, "res")
+    # 実際のビルドディレクトリのパス
+    build = os.path.join(cwd, "build")
+    res = os.path.join(build, "res")
     default_config = os.path.join(res, "default_config.json")
     default_llm = os.path.join(res, "default_llm.json")
     default_llm_sequence = os.path.join(res, "default_llm_sequence.json")
@@ -42,8 +43,8 @@ class Path:
 
     style_bert_vits2 = os.path.join(cwd, "external", "Style-Bert-VITS2")
     style_bert_vits2_config = os.path.join(style_bert_vits2, "config.yml")
-    style_bert_vits2_setup = os.path.join(setup, "Setup-Style-Bert-VITS2.bat")
-    style_bert_vits2_run = os.path.join(setup, "Run-Style-Bert-VITS2.bat")
+    style_bert_vits2_setup = os.path.join(build, "Setup-Style-Bert-VITS2.bat")
+    style_bert_vits2_run = os.path.join(build, "Run-Style-Bert-VITS2.bat")
     style_bert_vits2_app = os.path.join(style_bert_vits2, "App.bat")
     style_bert_vits2_editor = os.path.join(style_bert_vits2, "Editor.bat")
 

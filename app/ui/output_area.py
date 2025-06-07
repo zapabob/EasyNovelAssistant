@@ -1,8 +1,8 @@
 ﻿import tkinter as tk
 from tkinter import scrolledtext
 
-from const import Const
-from path import Path
+from ..core.const import Const
+from ..core.path import Path
 
 
 class OutputArea:
@@ -22,13 +22,15 @@ class OutputArea:
         self.counter = 0
 
     def apply_text_setting(self):
-        self.text_area.configure(font=(self.ctx["text_area_font"], self.ctx["text_area_font_size"]))
+        font_name = self.ctx.get("text_area_font", "Consolas")
+        font_size = self.ctx.get("text_area_font_size", 11)
+        self.text_area.configure(font=(font_name, font_size))
         colors = {
-            "fg": self.ctx["foreground_color"],
-            "bg": self.ctx["background_color"],
-            "selectforeground": self.ctx["select_foreground_color"],
-            "insertbackground": self.ctx["select_foreground_color"],
-            "selectbackground": self.ctx["select_background_color"],
+            "fg": self.ctx.get("foreground_color", "black"),
+            "bg": self.ctx.get("background_color", "white"),
+            "selectforeground": self.ctx.get("select_foreground_color", "white"),
+            "insertbackground": self.ctx.get("select_foreground_color", "black"),
+            "selectbackground": self.ctx.get("select_background_color", "blue"),
         }
         self.text_area.configure(colors)
 

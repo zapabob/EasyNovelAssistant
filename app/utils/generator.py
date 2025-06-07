@@ -1,6 +1,6 @@
 ﻿import time
 
-from src.utils.job_queue import JobQueue
+from .job_queue import JobQueue
 
 
 class Generator:

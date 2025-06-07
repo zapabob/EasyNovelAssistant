@@ -1,7 +1,7 @@
 ﻿import json
 import os
 
-from path import Path
+from .path import Path
 
 
 class Context:
@@ -152,14 +152,20 @@ class Context:
         return self.cfg.get(key, default)
 
     def finalize(self):
-        if not self.form.file_menu.ask_save():  # TODO: すべて閉じる
-            return
+        # file_menuが存在しない場合はスキップ
+        if hasattr(self.form, 'file_menu') and self.form.file_menu:
+            if not self.form.file_menu.ask_save():  # TODO: すべて閉じる
+                return
+        
         self.form.update_config()
 
-        with open(Path.config, "w", encoding="utf-8-sig") as f:
-            json.dump(self.cfg, f, indent=4, ensure_ascii=False)
+        try:
+            with open(Path.config, "w", encoding="utf-8-sig") as f:
+                json.dump(self.cfg, f, indent=4, ensure_ascii=False)
+        except Exception as e:
+            print(f"⚠️ 設定ファイル保存エラー: {e}")
 
         self.form.win.destroy()
 
-        if self.generator.enabled:
+        if hasattr(self, 'generator') and self.generator.enabled:
             self.kobold_cpp.abort()

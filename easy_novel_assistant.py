@@ -13,25 +13,19 @@ sys.path.insert(0, project_root)
 
 # 統合システムv3の安全なインポート
 ADVANCED_SYSTEMS_AVAILABLE = False
+POWER_PROTECTION_AVAILABLE = False
 try:
     # 依存関係のチェック
     import torch
     torch_available = True
 except ImportError:
     torch_available = False
-
-if torch_available:
-    try:
-        from src.utils.repetition_suppressor_v3 import AdvancedRepetitionSuppressorV3
-        from src.integration.lora_style_coordinator import LoRAStyleCoordinator, create_default_coordinator
-        from src.integration.cross_suppression_engine import CrossSuppressionEngine, create_default_cross_engine
-        ADVANCED_SYSTEMS_AVAILABLE = True
-        print("SUCCESS: Advanced systems v3 loaded")
-    except ImportError as e:
-        ADVANCED_SYSTEMS_AVAILABLE = False
-        print(f"WARNING: Advanced systems v3 load failed: {e}")
-else:
     print("INFO: PyTorch not available - running in basic mode")
+
+# Advanced systems v3 are temporarily disabled due to restructuring
+ADVANCED_SYSTEMS_AVAILABLE = False
+POWER_PROTECTION_AVAILABLE = False
+print("INFO: Advanced systems v3 disabled during restructuring - running in basic mode")
 
 # 新しい構造化されたモジュールインポート
 from app.core.const import Const
@@ -48,6 +42,8 @@ class EasyNovelAssistant:
     SLEEP_TIME = 50
 
     def __init__(self):
+        global ADVANCED_SYSTEMS_AVAILABLE, POWER_PROTECTION_AVAILABLE
+        
         self.ctx = Context()
         Path.init(self.ctx)
         Const.init(self.ctx)
@@ -69,10 +65,64 @@ class EasyNovelAssistant:
         else:
             print("INFO: Running in basic mode - advanced systems disabled")
 
+        # 電源断保護システムの初期化
+        if POWER_PROTECTION_AVAILABLE:
+            try:
+                self._initialize_power_protection()
+                print("SUCCESS: Power loss protection system activated")
+            except Exception as e:
+                print(f"WARNING: Power protection initialization failed: {e}")
+                POWER_PROTECTION_AVAILABLE = False
+
         # TODO: 起動時引数でのフォルダ・ファイル読み込み
         self.ctx.form.input_area.open_tab(self.ctx["input_text"])  # 書き出しは Form の finalize
 
         self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
+
+    def _initialize_power_protection(self):
+        """電源断保護システムの初期化"""
+        protection_config = {
+            'auto_save_interval': 300,  # 5分間隔
+            'max_backups': 10,          # 最大10個のバックアップ
+            'backup_rotation': True,    # バックアップローテーション有効
+            'emergency_save': True      # 緊急保存有効
+        }
+        
+        self.ctx.power_protection = create_power_protection_manager(self.ctx, protection_config)
+        
+        # 復旧チェック（前回の異常終了からの復旧）
+        self._check_recovery_needed()
+        
+    def _check_recovery_needed(self):
+        """前回セッションからの復旧チェック"""
+        try:
+            recovery_candidates = self.ctx.power_protection.find_recovery_candidates()
+            
+            if recovery_candidates:
+                print(f"INFO: Found {len(recovery_candidates)} recovery candidates")
+                
+                # 最新の復旧候補をチェック
+                latest_candidate = recovery_candidates[0]
+                
+                # 緊急保存があった場合は自動復旧を提案
+                if latest_candidate['is_emergency']:
+                    print("WARNING: Emergency backup detected - automatic recovery recommended")
+                    # ここで必要に応じてユーザーに復旧を確認
+                    self._attempt_auto_recovery(latest_candidate['file_path'])
+                    
+        except Exception as e:
+            print(f"WARNING: Recovery check failed: {e}")
+            
+    def _attempt_auto_recovery(self, backup_file: str):
+        """自動復旧の実行"""
+        try:
+            success = self.ctx.power_protection.restore_from_backup(backup_file)
+            if success:
+                print("SUCCESS: Auto-recovery completed from emergency backup")
+            else:
+                print("WARNING: Auto-recovery failed - continuing with fresh session")
+        except Exception as e:
+            print(f"WARNING: Auto-recovery error: {e}")
 
     def _initialize_advanced_systems(self):
         """統合システムv3の初期化"""
@@ -134,8 +184,13 @@ class EasyNovelAssistant:
             'success_rate_history': [],
             'character_usage': {},
             'theta_convergence_rate': 0.0,
-            'bleurt_alternative_score': 0.0
+            'bleurt_alternative_score': 0.0,
+            'power_protection_saves': 0,
+            'emergency_recoveries': 0
         }
+
+        # 統合設定をコンテキストに保存
+        self.ctx.integration_config = self.integration_config
 
         # Generatorクラスにインテグレーションを追加
         self._patch_generator_for_integration()
@@ -210,6 +265,13 @@ class EasyNovelAssistant:
                         print(f"   Theta convergence: {self.ctx.integration_stats['theta_convergence_rate']:.1%}")
                         print(f"   BLEURT alternative: {self.ctx.integration_stats['bleurt_alternative_score']:.1%}")
 
+                # 電源断保護: 重要な生成後にチェックポイント保存
+                if (POWER_PROTECTION_AVAILABLE and hasattr(self.ctx, 'power_protection') and 
+                    self.ctx.integration_stats['total_processed'] % 5 == 0):  # 5回に1回保存
+                    
+                    self.ctx.power_protection.save_checkpoint("generation_checkpoint")
+                    self.ctx.integration_stats['power_protection_saves'] += 1
+
                 # キャラクター使用統計
                 if character_name:
                     self.ctx.integration_stats['character_usage'][character_name] = \
@@ -228,6 +290,8 @@ class EasyNovelAssistant:
         self.ctx.form.run()
 
     def mainloop(self):
+        global ADVANCED_SYSTEMS_AVAILABLE, POWER_PROTECTION_AVAILABLE
+        
         self.ctx.generator.update()
         self.ctx.style_bert_vits2.update()
         self.ctx.form.input_area.update()
@@ -238,6 +302,11 @@ class EasyNovelAssistant:
             
             # GUI統合パネルへの統計更新
             if hasattr(self.ctx.form, 'integration_panel') and self.ctx.form.integration_panel:
+                # 電源断保護の状態も含める
+                if POWER_PROTECTION_AVAILABLE and hasattr(self.ctx, 'power_protection'):
+                    protection_status = self.ctx.power_protection.get_protection_status()
+                    stats['power_protection_status'] = protection_status
+                    
                 self.ctx.form.integration_panel.update_statistics(stats)
             
             # 商用レベル達成度の確認
@@ -251,6 +320,10 @@ class EasyNovelAssistant:
                     print(f"   Theta convergence: {stats['theta_convergence_rate']:.1%} >= 80%")
                     print(f"   BLEURT alternative: {stats['bleurt_alternative_score']:.1%} >= 87%")
                     print(f"   Success rate: {avg_success_rate:.1%} >= 90%")
+                    
+                    # 商用レベル達成時の特別チェックポイント
+                    if POWER_PROTECTION_AVAILABLE and hasattr(self.ctx, 'power_protection'):
+                        self.ctx.power_protection.save_checkpoint("commercial_level_achieved")
         
         self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
 

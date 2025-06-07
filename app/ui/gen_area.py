@@ -1,7 +1,7 @@
 ﻿import tkinter as tk
 from tkinter import scrolledtext
 
-from const import Const
+from ..core.const import Const
 
 
 class GenArea:
@@ -11,7 +11,8 @@ class GenArea:
         self.text_area.configure(Const.TEXT_AREA_CONFIG)
         self.text_area.pack(fill=tk.BOTH, expand=True)
         self.apply_text_setting()
-        parent.add(self.text_area, height=ctx["gen_area_height"], minsize=Const.AREA_MIN_SIZE, stretch="never")
+        gen_area_height = ctx.get("gen_area_height", 200)
+        parent.add(self.text_area, height=gen_area_height, minsize=Const.AREA_MIN_SIZE, stretch="never")
 
         self.ctx_menu = tk.Menu(self.text_area, tearoff=False)
         self.text_area.bind("<Button-3>", self._on_ctx_menu)
@@ -19,13 +20,15 @@ class GenArea:
         self.text_area.bind("<Button-2>", self._on_middle_click)
 
     def apply_text_setting(self):
-        self.text_area.configure(font=(self.ctx["text_area_font"], self.ctx["text_area_font_size"]))
+        font_name = self.ctx.get("text_area_font", "Consolas")
+        font_size = self.ctx.get("text_area_font_size", 11)
+        self.text_area.configure(font=(font_name, font_size))
         colors = {
-            "fg": self.ctx["foreground_color"],
-            "bg": self.ctx["background_color"],
-            "selectforeground": self.ctx["select_foreground_color"],
-            "insertbackground": self.ctx["select_foreground_color"],
-            "selectbackground": self.ctx["select_background_color"],
+            "fg": self.ctx.get("foreground_color", "black"),
+            "bg": self.ctx.get("background_color", "white"),
+            "selectforeground": self.ctx.get("select_foreground_color", "white"),
+            "insertbackground": self.ctx.get("select_foreground_color", "black"),
+            "selectbackground": self.ctx.get("select_background_color", "blue"),
         }
         self.text_area.configure(colors)
 

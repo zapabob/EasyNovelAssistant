@@ -5,7 +5,7 @@ import webbrowser
 from sys import platform
 
 import requests
-from path import Path
+from ..core.path import Path
 
 
 class KoboldCpp:
@@ -59,26 +59,35 @@ popd
 
             # 既存の配布モデルの場合
             llm["file_names"] = []
-            for url in llm["urls"]:
-                llm["file_names"].append(url.split("/")[-1])
-            llm["file_name"] = llm["file_names"][0]
-            # urls[0]の "/resolve/main/" より前を取得
-            llm["info_url"] = llm["urls"][0].split("/resolve/main/")[0]
+            if len(llm["urls"]) > 0:
+                for url in llm["urls"]:
+                    llm["file_names"].append(url.split("/")[-1])
+                llm["file_name"] = llm["file_names"][0]
+                # urls[0]の "/resolve/main/" より前を取得
+                llm["info_url"] = llm["urls"][0].split("/resolve/main/")[0]
+            else:
+                # urlsが空の場合は適当なデフォルト値を設定
+                llm["file_name"] = "model.gguf"
+                llm["info_url"] = ""
+                print(f"WARNING: No URLs found for LLM {llm_name}")
 
             context_size = min(llm["context_size"], ctx["llm_context_size"])
-            bat_file = os.path.join(Path.kobold_cpp, f'Run-{llm["name"]}-C{context_size // 1024}K-L0.bat')
+            
+            # batファイルの作成（urlsがある場合のみ）
+            if len(llm["urls"]) > 0:
+                bat_file = os.path.join(Path.kobold_cpp, f'Run-{llm["name"]}-C{context_size // 1024}K-L0.bat')
 
-            curl_cmd = ""
-            for url in llm["urls"]:
-                curl_cmd += self.CURL_TEMPLATE.format(url=url, file_name=url.split("/")[-1], info_url=llm["info_url"])
-            bat_text = self.BAT_TEMPLATE.format(
-                curl_cmd=curl_cmd,
-                option=ctx["koboldcpp_arg"],
-                context_size=context_size,
-                file_name=llm["file_name"],
-            )
-            with open(bat_file, "w", encoding="utf-8") as f:
-                f.write(bat_text)
+                curl_cmd = ""
+                for url in llm["urls"]:
+                    curl_cmd += self.CURL_TEMPLATE.format(url=url, file_name=url.split("/")[-1], info_url=llm["info_url"])
+                bat_text = self.BAT_TEMPLATE.format(
+                    curl_cmd=curl_cmd,
+                    option=ctx["koboldcpp_arg"],
+                    context_size=context_size,
+                    file_name=llm["file_name"],
+                )
+                with open(bat_file, "w", encoding="utf-8") as f:
+                    f.write(bat_text)
 
     def get_model(self):
         try:

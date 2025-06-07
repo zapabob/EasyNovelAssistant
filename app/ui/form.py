@@ -1,22 +1,24 @@
 ﻿import tkinter as tk
 
-from const import Const
-from gen_area import GenArea
-from input_area import InputArea
-from menu.file_menu import FileMenu
-from menu.gen_menu import GenMenu
-from menu.help_menu import HelpMenu
-from menu.model_menu import ModelMenu
-from menu.sample_menu import SampleMenu
-from menu.setting_menu import SettingMenu
-from menu.speech_menu import SpeechMenu
-from menu.tool_menu import ToolMenu
-from output_area import OutputArea
+from ..core.const import Const
+from .gen_area import GenArea
+from .input_area import InputArea
+# Menu modules
+from .menu.file_menu import FileMenu
+# Note: Other menu modules will be added later
+# from .menu.gen_menu import GenMenu
+# from .menu.help_menu import HelpMenu
+# from .menu.model_menu import ModelMenu
+# from .menu.sample_menu import SampleMenu
+# from .menu.setting_menu import SettingMenu
+# from .menu.speech_menu import SpeechMenu
+# from .menu.tool_menu import ToolMenu
+from .output_area import OutputArea
 from tkinterdnd2 import DND_FILES, TkinterDnD
 
 # 統合システムv3制御パネル
 try:
-    from integration_control_panel import IntegrationControlPanel
+    from .integration_control_panel import IntegrationControlPanel
     INTEGRATION_PANEL_AVAILABLE = True
 except ImportError:
     INTEGRATION_PANEL_AVAILABLE = False
@@ -34,9 +36,16 @@ class Form:
         self.win.drop_target_register(DND_FILES)
         self.win.title("EasyNovelAssistant")
         self.win.minsize(self.WIN_MIN_W, self.WIN_MIN_H)
-        win_geom = f'{self.ctx["win_width"]}x{self.ctx["win_height"]}'
-        if self.ctx["win_x"] != 0 or self.ctx["win_y"] != 0:
-            win_geom += f'+{ctx["win_x"]}+{self.ctx["win_y"]}'
+        
+        # デフォルト値の設定
+        win_width = self.ctx.get("win_width", 800)
+        win_height = self.ctx.get("win_height", 600)
+        win_x = self.ctx.get("win_x", 0)
+        win_y = self.ctx.get("win_y", 0)
+        
+        win_geom = f'{win_width}x{win_height}'
+        if win_x != 0 or win_y != 0:
+            win_geom += f'+{win_x}+{win_y}'
         self.win.geometry(win_geom)
         self.win.protocol("WM_DELETE_WINDOW", self.ctx.finalize)
         self.win.dnd_bind("<<Drop>>", lambda e: self.file_menu.dnd_file(e))
@@ -44,21 +53,24 @@ class Form:
         self.menu_bar = tk.Menu(self.win)
         self.win.config(menu=self.menu_bar)
 
+        # Menu initialization
         self.file_menu = FileMenu(self, ctx)
-        self.model_menu = ModelMenu(self, ctx)
-        self.gen_menu = GenMenu(self, ctx)
-        self.speech_menu = SpeechMenu(self, ctx)
-        self.setting_menu = SettingMenu(self, ctx)
-        self.sample_menu = SampleMenu(self, ctx)
-        self.tool_menu = ToolMenu(self, ctx)
-        self.help_menu = HelpMenu(self, ctx)
+        # Note: Other menu modules will be added later
+        # self.model_menu = ModelMenu(self, ctx)
+        # self.gen_menu = GenMenu(self, ctx)
+        # self.speech_menu = SpeechMenu(self, ctx)
+        # self.setting_menu = SettingMenu(self, ctx)
+        # self.sample_menu = SampleMenu(self, ctx)
+        # self.tool_menu = ToolMenu(self, ctx)
+        # self.help_menu = HelpMenu(self, ctx)
 
         self.pane_h = tk.PanedWindow(self.win, orient=tk.HORIZONTAL, sashpad=2)
 
         self.input_area = InputArea(self.pane_h, ctx)
 
         self.pane_v = tk.PanedWindow(self.pane_h, orient=tk.VERTICAL, sashpad=2)
-        self.pane_h.add(self.pane_v, width=ctx["pane_v_width"], minsize=Const.AREA_MIN_SIZE, stretch="always")
+        pane_v_width = ctx.get("pane_v_width", 400)
+        self.pane_h.add(self.pane_v, width=pane_v_width, minsize=Const.AREA_MIN_SIZE, stretch="always")
 
         self.output_area = OutputArea(self.pane_v, ctx)
         self.gen_area = GenArea(self.pane_v, ctx)
