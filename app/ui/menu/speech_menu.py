@@ -1,7 +1,7 @@
 ﻿import os
 import tkinter as tk
 
-from path import Path
+from app.core.path import Path
 
 
 class SpeechMenu:

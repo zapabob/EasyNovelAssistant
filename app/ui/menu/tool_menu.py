@@ -4,7 +4,7 @@ import tkinter as tk
 import webbrowser
 from sys import platform
 
-from path import Path
+from app.core.path import Path
 
 
 class ToolMenu:

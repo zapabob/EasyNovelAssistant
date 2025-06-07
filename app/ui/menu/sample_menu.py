@@ -5,7 +5,7 @@ import urllib.request
 import webbrowser
 from urllib.parse import quote
 
-from path import Path
+from app.core.path import Path
 
 
 class SampleMenu:

@@ -2,7 +2,7 @@
 import tkinter as tk
 from tkinter import simpledialog
 
-from path import Path
+from app.core.path import Path
 
 
 class ModelMenu:
