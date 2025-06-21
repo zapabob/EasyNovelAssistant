@@ -1,4 +1,5 @@
 ﻿import os
+import json
 import tkinter as tk
 from tkinter import simpledialog
 
@@ -46,6 +47,9 @@ class ModelMenu:
                 command=lambda v=llm_context_size, _=check_var: set_llm_context_size(v),
             )
 
+        self.menu.add_separator()
+
+        self.menu.add_command(label="URLからモデル追加", command=self.add_model_from_url)
         self.menu.add_separator()
 
         categories = {}
@@ -97,3 +101,48 @@ class ModelMenu:
         if result is not None:
             print(result)
             simpledialog.messagebox.showerror("エラー", result, parent=self.form.win)
+
+    def add_model_from_url(self):
+        url = simpledialog.askstring(
+            "モデルURL入力",
+            "HuggingFace の GGUF ファイル URL を入力してください。",
+            parent=self.form.win,
+        )
+        if not url:
+            return
+        name = simpledialog.askstring("モデル名入力", "メニューに表示するモデル名を入力してください。", parent=self.form.win)
+        if not name:
+            name = url.split("/")[-1]
+        result = self.ctx.kobold_cpp.download_url(url)
+        if result is not None:
+            print(result)
+            simpledialog.messagebox.showerror("エラー", result, parent=self.form.win)
+            return
+
+        info_url = url.split("/resolve/")[0]
+        file_name = url.split("/")[-1]
+        llm_data = {
+            "max_gpu_layer": 33,
+            "context_size": 4096,
+            "urls": [url],
+        }
+        self.ctx.llm[name] = llm_data
+
+        # update llm.json
+        try:
+            user_llm = {}
+            if os.path.exists(Path.llm):
+                with open(Path.llm, "r", encoding="utf-8-sig") as f:
+                    user_llm = json.load(f)
+        except Exception:
+            user_llm = {}
+        user_llm[name] = llm_data
+        with open(Path.llm, "w", encoding="utf-8-sig") as f:
+            json.dump(user_llm, f, indent=4, ensure_ascii=False)
+
+        # update internal info for immediate use
+        llm_data["name"] = name.split("/")[-1].split(" ")[-1]
+        llm_data["file_names"] = [file_name]
+        llm_data["file_name"] = file_name
+        llm_data["info_url"] = info_url
+

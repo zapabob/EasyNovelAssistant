@@ -109,6 +109,12 @@ popd
                 return f"{llm_name} のダウンロードに失敗しました。\n{curl_cmd}"
         return None
 
+    def download_url(self, url):
+        curl_cmd = f"curl -k -LO {url}"
+        if subprocess.run(curl_cmd, shell=True, cwd=Path.kobold_cpp).returncode != 0:
+            return f"モデルのダウンロードに失敗しました。\n{curl_cmd}"
+        return None
+
     def launch_server(self):
         loaded_model = self.get_model()
         if loaded_model is not None:
