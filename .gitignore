@@ -32,14 +32,20 @@ EasyNovelAssistant/setup/lib/python/
 log/
 speech/
 
-# テキストファイル（一時ファイル、ログ等）
-*.txt
-!README.txt
-!LICENSE.txt
-!requirements.txt
-!*.md
-!EasyNovelAssistant/LICENSE.txt
-!EasyNovelAssistant/setup/res/requirements.txt
+# 日付の含まれるテキストファイル（一時ファイル、ログ等）
+*2025*.txt
+*2024*.txt
+*2023*.txt
+*2022*.txt
+*2021*.txt
+*2020*.txt
+*2019*.txt
+*2018*.txt
+*2017*.txt
+*2016*.txt
+*2015*.txt
+*_generate.txt
+*_output.txt
 
 # 一時ファイル
 *.tmp
