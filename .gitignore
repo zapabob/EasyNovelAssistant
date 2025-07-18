@@ -32,6 +32,15 @@ EasyNovelAssistant/setup/lib/python/
 log/
 speech/
 
+# テキストファイル（一時ファイル、ログ等）
+*.txt
+!README.txt
+!LICENSE.txt
+!requirements.txt
+!*.md
+!EasyNovelAssistant/LICENSE.txt
+!EasyNovelAssistant/setup/res/requirements.txt
+
 # 一時ファイル
 *.tmp
 *.temp
