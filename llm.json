@@ -1,0 +1,9 @@
+﻿{
+    "Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf": {
+        "max_gpu_layer": 33,
+        "context_size": 4096,
+        "urls": [
+            "https://huggingface.co/DevQuasar/Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf"
+        ]
+    }
+}

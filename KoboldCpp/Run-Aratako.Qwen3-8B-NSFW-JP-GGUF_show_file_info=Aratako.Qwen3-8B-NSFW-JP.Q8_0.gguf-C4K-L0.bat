@@ -1,0 +1,19 @@
+@echo off
+chcp 65001 > NUL
+pushd %~dp0
+set CURL_CMD=C:\Windows\System32\curl.exe -k
+
+@REM 7B: 33, 35B: 41, 70B: 65
+set GPU_LAYERS=0
+
+@REM 2048, 4096, 8192, 16384, 32768, 65536, 131072
+set CONTEXT_SIZE=4096
+
+if not exist Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf (
+    start "" https://huggingface.co/DevQuasar/Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf
+    %CURL_CMD% -LO https://huggingface.co/DevQuasar/Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf
+)
+
+koboldcpp.exe --gpulayers %GPU_LAYERS% --usecublas --contextsize %CONTEXT_SIZE% Aratako.Qwen3-8B-NSFW-JP-GGUF?show_file_info=Aratako.Qwen3-8B-NSFW-JP.Q8_0.gguf
+if %errorlevel% neq 0 ( pause & popd & exit /b 1 )
+popd
