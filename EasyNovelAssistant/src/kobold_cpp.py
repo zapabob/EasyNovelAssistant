@@ -1,7 +1,8 @@
-﻿import json
+import json
 import os
 import subprocess
 import webbrowser
+from typing import Callable, Optional
 from sys import platform
 
 import requests
@@ -34,11 +35,21 @@ popd
 
     def __init__(self, ctx):
         self.ctx = ctx
+        self.backend = (ctx["llm_backend"] or "koboldcpp").lower()
         self.base_url = f'http://{ctx["koboldcpp_host"]}:{ctx["koboldcpp_port"]}'
-        self.model_url = f"{self.base_url}/api/v1/model"
-        self.generate_url = f"{self.base_url}/api/v1/generate"
-        self.check_url = f"{self.base_url}/api/extra/generate/check"
-        self.abort_url = f"{self.base_url}/api/extra/abort"
+        if self.backend == "hypura":
+            # Hypura serves Ollama-compatible endpoints
+            self.model_url = f"{self.base_url}/api/tags"
+            self.generate_url = f"{self.base_url}/api/generate"
+            self.stream_url = f"{self.base_url}/api/extra/generate/stream"
+            self.check_url = f"{self.base_url}/api/extra/generate/check"
+            self.abort_url = f"{self.base_url}/api/extra/abort"
+        else:
+            self.model_url = f"{self.base_url}/api/v1/model"
+            self.generate_url = f"{self.base_url}/api/v1/generate"
+            self.stream_url = None
+            self.check_url = f"{self.base_url}/api/extra/generate/check"
+            self.abort_url = f"{self.base_url}/api/extra/abort"
 
         self.model_name = None
 
@@ -96,7 +107,14 @@ popd
         try:
             response = requests.get(self.model_url, timeout=self.ctx["koboldcpp_command_timeout"])
             if response.status_code == 200:
-                self.model_name = response.json()["result"].split("/")[-1]
+                if self.backend == "hypura":
+                    models = response.json().get("models", [])
+                    if len(models) > 0:
+                        self.model_name = models[0].get("name") or models[0].get("model")
+                    else:
+                        self.model_name = None
+                else:
+                    self.model_name = response.json()["result"].split("/")[-1]
                 return self.model_name
         except Exception as e:
             pass
@@ -140,6 +158,15 @@ popd
         return None
 
     def launch_server(self):
+        if self.backend == "hypura":
+            loaded_model = self.get_model()
+            if loaded_model is None:
+                return (
+                    f"Hypura に接続できません: {self.base_url}\n"
+                    f"先に hypura serve を起動してください。"
+                )
+            return None
+
         loaded_model = self.get_model()
         if loaded_model is not None:
             return f"{loaded_model} がすでにロード済みです。\nモデルサーバーのコマンドプロンプトを閉じてからロードしてください。"
@@ -197,31 +224,50 @@ popd
             )
             ctx["max_length"] = max_context_length // 2
 
-        args = {
-            "max_context_length": max_context_length,
-            "max_length": ctx["max_length"],
-            "prompt": text,
-            "quiet": False,
-            "stop_sequence": self.get_stop_sequence(),
-            "rep_pen": ctx["rep_pen"],
-            "rep_pen_range": ctx["rep_pen_range"],
-            "rep_pen_slope": ctx["rep_pen_slope"],
-            "temperature": ctx["temperature"],
-            "tfs": ctx["tfs"],
-            "top_a": ctx["top_a"],
-            "top_k": ctx["top_k"],
-            "top_p": ctx["top_p"],
-            "typical": ctx["typical"],
-            "min_p": ctx["min_p"],
-            "sampler_order": ctx["sampler_order"],
-        }
+        if self.backend == "hypura":
+            if self.model_name is None:
+                self.get_model()
+            args = {
+                "model": self.model_name or llm.get("name") or llm_name,
+                "prompt": text,
+                "stream": False,
+                "options": {
+                    "num_predict": ctx["max_length"],
+                    "temperature": ctx["temperature"],
+                    "top_k": ctx["top_k"],
+                    "top_p": ctx["top_p"],
+                    "repeat_penalty": ctx["rep_pen"],
+                },
+            }
+        else:
+            args = {
+                "max_context_length": max_context_length,
+                "max_length": ctx["max_length"],
+                "prompt": text,
+                "quiet": False,
+                "stop_sequence": self.get_stop_sequence(),
+                "rep_pen": ctx["rep_pen"],
+                "rep_pen_range": ctx["rep_pen_range"],
+                "rep_pen_slope": ctx["rep_pen_slope"],
+                "temperature": ctx["temperature"],
+                "tfs": ctx["tfs"],
+                "top_a": ctx["top_a"],
+                "top_k": ctx["top_k"],
+                "top_p": ctx["top_p"],
+                "typical": ctx["typical"],
+                "min_p": ctx["min_p"],
+                "sampler_order": ctx["sampler_order"],
+            }
         print(f"KoboldCpp.generate({args})")
         try:
             response = requests.post(self.generate_url, json=args)
             if response.status_code == 200:
                 if self.model_name is not None:
                     args["model_name"] = self.model_name
-                args["result"] = response.json()["results"][0]["text"]
+                if self.backend == "hypura":
+                    args["result"] = response.json().get("response", "")
+                else:
+                    args["result"] = response.json()["results"][0]["text"]
                 print(f'KoboldCpp.generate(): {args["result"]}')
                 with open(Path.generate_log, "a", encoding="utf-8-sig") as f:
                     json.dump(args, f, indent=4, ensure_ascii=False)
@@ -232,7 +278,92 @@ popd
             print(f"[例外] KoboldCpp.generate(): {e}")
         return None
 
+    def generate_stream(self, text, on_token: Optional[Callable[[str], None]] = None):
+        """
+        Stream tokens and return the final combined text.
+        Falls back to non-stream generate for non-hypura backends.
+        """
+        if self.backend != "hypura":
+            result = self.generate(text)
+            if result and on_token is not None:
+                on_token(result)
+            return result
+
+        ctx = self.ctx
+        if self.ctx["llm_name"] not in self.ctx.llm:
+            self.ctx["llm_name"] = "[元祖] LightChatAssistant-TypeB-2x7B-IQ4_XS"
+            self.ctx["llm_gpu_layer"] = 0
+
+        llm_name = ctx["llm_name"]
+        llm = ctx.llm[llm_name]
+        if self.model_name is None:
+            self.get_model()
+
+        stream_args = {
+            "prompt": text,
+            "max_length": ctx["max_length"],
+            "temperature": ctx["temperature"],
+            "top_k": ctx["top_k"],
+            "top_p": ctx["top_p"],
+            "rep_pen": ctx["rep_pen"],
+            "rep_pen_range": ctx["rep_pen_range"],
+            "rep_pen_slope": ctx["rep_pen_slope"],
+            "tfs": ctx["tfs"],
+            "top_a": ctx["top_a"],
+            "typical": ctx["typical"],
+            "min_p": ctx["min_p"],
+            "sampler_order": ctx["sampler_order"],
+            "stop_sequence": self.get_stop_sequence(),
+            "model": self.model_name or llm.get("name") or llm_name,
+        }
+        print(f"KoboldCpp.generate_stream({stream_args})")
+        tokens = []
+        try:
+            with requests.post(
+                self.stream_url,
+                json=stream_args,
+                stream=True,
+                timeout=self.ctx["koboldcpp_command_timeout"],
+            ) as response:
+                if response.status_code != 200:
+                    print(f"[失敗] KoboldCpp.generate_stream(): {response.text}")
+                    return None
+                for raw_line in response.iter_lines(decode_unicode=True):
+                    if not raw_line:
+                        continue
+                    try:
+                        obj = json.loads(raw_line)
+                    except Exception:
+                        continue
+                    token = obj.get("token")
+                    if not token:
+                        continue
+                    tokens.append(token)
+                    if on_token is not None:
+                        on_token(token)
+            result = "".join(tokens)
+            with open(Path.generate_log, "a", encoding="utf-8-sig") as f:
+                json.dump(
+                    {
+                        "stream": True,
+                        "model_name": self.model_name,
+                        "prompt": text,
+                        "result": result,
+                    },
+                    f,
+                    indent=4,
+                    ensure_ascii=False,
+                )
+                f.write("\n")
+            return result
+        except Exception as e:
+            print(f"[例外] KoboldCpp.generate_stream(): {e}")
+            return None
+
     def check(self):
+        if self.backend == "hypura":
+            # Ollama-compatible generate check endpoint does not exist.
+            return None
         try:
             response = requests.get(self.check_url)
             if response.status_code == 200:
