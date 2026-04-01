@@ -1,4 +1,4 @@
-﻿{
+{
 	"char_name": "さくら",
 	"user_name": "俺くん",
 	"input_text": "吾輩は猫である。名前はまだない。",
@@ -44,6 +44,7 @@
 		2,
 		5
 	],
+	"llm_backend": "koboldcpp",
 	"koboldcpp_host": "localhost",
 	"koboldcpp_port": 5001,
 	"koboldcpp_arg": "--usecublas",
