@@ -8,8 +8,9 @@ set "PROXY_SCRIPT=%ROOT%proxy\kobold_to_hypura_proxy.py"
 set "PROXY_LISTEN=127.0.0.1:5001"
 set "PROXY_HYPURA=127.0.0.1:8080"
 
-echo [INFO] Optional launcher: Kobold-compatible proxy to Hypura
-echo [INFO] Default dual-path operation now uses real KoboldCpp for EasyNovelAssistant.
+echo [INFO] Legacy optional launcher: Kobold-compatible proxy to Hypura
+echo [INFO] EasyNovelAssistant now has a built-in backend selector for KoboldCpp and Hypura.
+echo [INFO] Use this script only if you specifically want the old external proxy flow.
 
 echo [1/3] Checking Hypura endpoint: %HYPURA_URL%
 C:\Windows\System32\curl.exe -sS "%HYPURA_URL%" > NUL

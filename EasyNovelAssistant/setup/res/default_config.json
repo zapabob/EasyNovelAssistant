@@ -45,6 +45,7 @@
 		5
 	],
 	"llm_backend": "koboldcpp",
+	"hypura_path": "",
 	"koboldcpp_host": "localhost",
 	"koboldcpp_port": 5001,
 	"koboldcpp_arg": "--usecublas",

@@ -24,6 +24,33 @@ class SettingMenu:
 
         self.menu.add_separator()
 
+        self.backend_var = tk.StringVar(value=self.ctx.kobold_cpp.backend)
+        backend_menu = tk.Menu(self.menu, tearoff=False)
+        self.menu.add_cascade(
+            label=f"LLMバックエンド: {self.ctx.kobold_cpp.display_backend_name()}",
+            menu=backend_menu,
+        )
+        backend_menu.add_radiobutton(
+            label="KoboldCpp",
+            variable=self.backend_var,
+            value="koboldcpp",
+            command=lambda: self._set_backend("koboldcpp"),
+        )
+        backend_menu.add_radiobutton(
+            label="Hypura",
+            variable=self.backend_var,
+            value="hypura",
+            command=lambda: self._set_backend("hypura"),
+        )
+
+        hypura_path = self.ctx["hypura_path"] or "(PATH を使用)"
+        self.menu.add_command(
+            label=f"Hypura 実行ファイル: {hypura_path}",
+            command=self._set_hypura_path,
+        )
+
+        self.menu.add_separator()
+
         def _set_font(f):
             self.ctx["text_area_font"] = f
             self.form.input_area.apply_text_setting()
@@ -85,3 +112,21 @@ class SettingMenu:
             return
         elif name != "":
             self.ctx[who] = name
+
+    def _set_backend(self, backend):
+        self.ctx.kobold_cpp.set_backend(backend)
+        self.form.update_title()
+
+    def _set_hypura_path(self):
+        current = self.ctx["hypura_path"] or ""
+        hypura_path = simpledialog.askstring(
+            "Hypura 実行ファイル設定",
+            "Hypura 実行ファイルのパスを入力してください。\n空欄にすると PATH 上の hypura を探します。",
+            initialvalue=current,
+            parent=self.form.win,
+        )
+        if hypura_path is None:
+            return
+
+        self.ctx["hypura_path"] = hypura_path.strip()
+        self.form.update_title()

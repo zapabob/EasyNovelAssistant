@@ -62,7 +62,7 @@ class Form:
         self.win.mainloop()
 
     def update_title(self):
-        title = "EasyNovelAssistant"
+        title = f'EasyNovelAssistant [{self.ctx.kobold_cpp.display_backend_name()}]'
         if self.ctx.kobold_cpp.model_name is not None:
             title += f" - {self.ctx.kobold_cpp.model_name}"
         if self.ctx.generator.enabled:

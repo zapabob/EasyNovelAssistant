@@ -92,6 +92,14 @@
 - `Run-EasyNovelAssistant.bat` で起動します。
 - `Update-EasyNovelAssistant.bat` で更新します。
 
+### LLM バックエンド切り替え
+
+`設定` メニューから LLM バックエンドを `KoboldCpp` と `Hypura` で切り替えられます。
+
+- `KoboldCpp`: 従来どおり `KoboldCpp/koboldcpp.exe` を使います。
+- `Hypura`: `hypura koboldcpp <model>` の互換モードで起動します。
+- `Hypura` を使う場合は、`設定 -> Hypura 実行ファイル` に `hypura.exe` のパスを入れるか、`PATH` から `hypura` を見つけられる状態にしてください。
+
 **次のステップは [はじめての生成](https://github.com/Zuntan03/EasyNovelAssistant/wiki/%E3%81%AF%E3%81%98%E3%82%81%E3%81%A6%E3%81%AE%E7%94%9F%E6%88%90) です。**
 
 ## 最近の更新

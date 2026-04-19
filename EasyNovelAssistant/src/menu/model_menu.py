@@ -84,7 +84,7 @@ class ModelMenu:
                 if sep_name in name:
                     self.menu.add_separator()
 
-            llm_path = os.path.join(Path.kobold_cpp, llm["file_name"])
+            llm_path = self._resolve_llm_path(llm)
             if not os.path.exists(llm_path):
                 llm_menu.add_command(
                     label="ダウンロード（完了まで応答なし、コマンドプロンプトに状況表示）",
@@ -151,9 +151,12 @@ class ModelMenu:
             if gpu_layers is None:
                 return  # キャンセルされた場合
             
-            # KoboldCppディレクトリにファイルをコピー（必要な場合のみ）
-            target_path = os.path.join(Path.kobold_cpp, file_name)
-            
+            # Hypura は元ファイルをそのまま参照し、KoboldCpp は従来どおり必要ならコピーする
+            if self.ctx.kobold_cpp.backend == "hypura":
+                target_path = file_path
+            else:
+                target_path = os.path.join(Path.kobold_cpp, file_name)
+
             if target_path != file_path:
                 import shutil
                 try:
@@ -334,6 +337,13 @@ class ModelMenu:
         except Exception as e:
             messagebox.showerror("エラー", f"GGUFファイルの追加中にエラーが発生しました:\n{str(e)}", parent=self.form.win)
             print(f"GGUFファイル追加エラー: {str(e)}")
+
+    def _resolve_llm_path(self, llm):
+        if llm.get("local_file", False) and llm.get("urls"):
+            local_url = llm["urls"][0]
+            if local_url.startswith("file://"):
+                return local_url[7:]
+        return os.path.join(Path.kobold_cpp, llm["file_name"])
 
     def add_model_from_url(self):
         url = simpledialog.askstring(
