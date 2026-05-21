@@ -3,7 +3,28 @@ import json
 import tkinter as tk
 from tkinter import simpledialog, filedialog, messagebox
 
+from kobold_cpp import DIRECT_SELECT_PREFIX, HYPURA_BACKEND
 from path import Path
+
+
+def choose_gguf_target_path(file_path, file_name, backend):
+    if backend == HYPURA_BACKEND:
+        return os.path.abspath(file_path)
+    return os.path.join(Path.kobold_cpp, file_name)
+
+
+def build_local_gguf_model_config(target_path, file_name, model_name, gpu_layers, context_size, temporary=False):
+    config = {
+        "max_gpu_layer": gpu_layers,
+        "context_size": context_size,
+        "urls": [f"file://{target_path}"],
+        "file_name": file_name,
+        "name": model_name,
+        "local_file": True,
+    }
+    if temporary:
+        config["temporary"] = True
+    return config
 
 
 class ModelMenu:
@@ -49,13 +70,17 @@ class ModelMenu:
 
         self.menu.add_separator()
 
+        hypura_backend = self.ctx.kobold_cpp.backend == HYPURA_BACKEND
+        direct_label = "GGUFファイルをHypuraにアタッチ..." if hypura_backend else "GGUFファイルを直接選択..."
+        add_label = "GGUFファイルを登録..." if hypura_backend else "GGUFファイルを追加..."
+
         # GGUFファイル関連メニューを追加
         self.menu.add_command(
-            label="GGUFファイルを直接選択...",
+            label=direct_label,
             command=self.select_gguf_file_directly
         )
         self.menu.add_command(
-            label="GGUFファイルを追加...",
+            label=add_label,
             command=self.add_gguf_file
         )
         self.menu.add_separator()
@@ -152,12 +177,9 @@ class ModelMenu:
                 return  # キャンセルされた場合
             
             # Hypura は元ファイルをそのまま参照し、KoboldCpp は従来どおり必要ならコピーする
-            if self.ctx.kobold_cpp.backend == "hypura":
-                target_path = file_path
-            else:
-                target_path = os.path.join(Path.kobold_cpp, file_name)
+            target_path = choose_gguf_target_path(file_path, file_name, self.ctx.kobold_cpp.backend)
 
-            if target_path != file_path:
+            if os.path.abspath(target_path) != os.path.abspath(file_path):
                 import shutil
                 try:
                     shutil.copy2(file_path, target_path)
@@ -168,15 +190,15 @@ class ModelMenu:
                     print(f"ファイルコピーに失敗、元のパスを使用: {file_path}")
             
             # 一時的なモデル設定を作成（llm.jsonには保存しない）
-            temp_model_name = f"[直接選択] {model_name}"
-            model_config = {
-                "max_gpu_layer": gpu_layers,
-                "context_size": 4096,  # デフォルト値
-                "urls": [f"file://{target_path}"],
-                "file_name": file_name,
-                "local_file": True,
-                "temporary": True  # 一時的なモデルであることを示すフラグ
-            }
+            temp_model_name = f"{DIRECT_SELECT_PREFIX}{model_name}"
+            model_config = build_local_gguf_model_config(
+                target_path=target_path,
+                file_name=file_name,
+                model_name=model_name,
+                gpu_layers=gpu_layers,
+                context_size=4096,
+                temporary=True,
+            )
             
             # コンテキストに一時的に追加
             self.ctx.llm[temp_model_name] = model_config
@@ -272,11 +294,11 @@ class ModelMenu:
             if context_size is None:
                 return  # キャンセルされた場合
             
-            # KoboldCppディレクトリにファイルをコピー
-            target_path = os.path.join(Path.kobold_cpp, file_name)
+            # Hypura は元ファイルをそのまま参照し、KoboldCpp は従来どおり必要ならコピーする
+            target_path = choose_gguf_target_path(file_path, file_name, self.ctx.kobold_cpp.backend)
             
             # 既存ファイルがある場合の確認
-            if os.path.exists(target_path) and target_path != file_path:
+            if os.path.exists(target_path) and os.path.abspath(target_path) != os.path.abspath(file_path):
                 if not messagebox.askyesno(
                     "確認",
                     f"KoboldCppディレクトリに同名のファイルが既に存在します。\n上書きしますか？\n\n{target_path}",
@@ -285,7 +307,7 @@ class ModelMenu:
                     return
             
             # ファイルをコピー（同じ場所にある場合はコピー不要）
-            if target_path != file_path:
+            if os.path.abspath(target_path) != os.path.abspath(file_path):
                 import shutil
                 try:
                     shutil.copy2(file_path, target_path)
@@ -295,13 +317,13 @@ class ModelMenu:
                     return
             
             # モデル設定を作成
-            model_config = {
-                "max_gpu_layer": gpu_layers,
-                "context_size": context_size,
-                "urls": [f"file://{target_path}"],  # ローカルファイルの場合
-                "file_name": file_name,
-                "local_file": True  # ローカルファイルであることを示すフラグ
-            }
+            model_config = build_local_gguf_model_config(
+                target_path=target_path,
+                file_name=file_name,
+                model_name=model_name,
+                gpu_layers=gpu_layers,
+                context_size=context_size,
+            )
             
             # llm.jsonを読み込み
             llm_data = {}

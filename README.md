@@ -99,6 +99,7 @@
 - `KoboldCpp`: 従来どおり `KoboldCpp/koboldcpp.exe` を使います。
 - `Hypura`: `hypura koboldcpp <model>` の互換モードで起動します。
 - `Hypura` を使う場合は、`設定 -> Hypura 実行ファイル` に `hypura.exe` のパスを入れるか、`PATH` から `hypura` を見つけられる状態にしてください。
+- `Hypura` 選択中は `モデル -> GGUFファイルをHypuraにアタッチ...` から任意の `.gguf` を元パスのまま起動対象にできます。
 
 **次のステップは [はじめての生成](https://github.com/Zuntan03/EasyNovelAssistant/wiki/%E3%81%AF%E3%81%98%E3%82%81%E3%81%A6%E3%81%AE%E7%94%9F%E6%88%90) です。**
 

@@ -74,8 +74,12 @@ class Generator:
                         self.enabled = False
                         self.ctx.form.update_title()
                 else:
-                    if self.ctx.kobold_cpp.backend != "hypura":
-                        result = self._get_last_line(self.generate_job.args["input_text"]) + result
+                    input_text = self.generate_job.args["input_text"]
+                    if (
+                        self.ctx.kobold_cpp.backend != "hypura"
+                        and not self.ctx.kobold_cpp.formats_prompt_for_generate(input_text)
+                    ):
+                        result = self._get_last_line(input_text) + result
                     self.ctx.form.output_area.append_output(result)
                 self.generate_job = None
             elif self.generate_job.canceled():
@@ -92,7 +96,9 @@ class Generator:
                 result = self.check_job.result
                 if result is not None:
                     if self.generate_job is not None:
-                        result = self._get_last_line(self.generate_job.args["input_text"]) + result
+                        input_text = self.generate_job.args["input_text"]
+                        if not self.ctx.kobold_cpp.formats_prompt_for_generate(input_text):
+                            result = self._get_last_line(input_text) + result
                     if result != self.gen_area_text:
                         if result.startswith(self.gen_area_text):
                             append_text = result[len(self.gen_area_text) :]

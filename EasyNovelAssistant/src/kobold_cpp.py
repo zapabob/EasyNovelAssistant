@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import shutil
 import subprocess
 import webbrowser
@@ -13,6 +14,19 @@ KOBOLDCPP_BACKEND = "koboldcpp"
 HYPURA_BACKEND = "hypura"
 DEFAULT_LLM_NAME = "[元祖] LightChatAssistant-TypeB-2x7B-IQ4_XS"
 DEFAULT_GPU_LAYER = 0
+DIRECT_SELECT_PREFIX = "[直接選択] "
+WRAPPED_PROMPT_MARKERS = (
+    "<|im_start|>",
+    "<start_of_turn>",
+    "[INST]",
+    "USER:",
+    "ASSISTANT:",
+    "### 指示:",
+    "### 応答:",
+)
+THINK_BLOCK_RE = re.compile(r"<think>.*?</think>\s*", re.IGNORECASE | re.DOTALL)
+THINK_MARKER_RE = re.compile(r"\[/?Start thinking\]\s*", re.IGNORECASE)
+LEADING_META_RE = re.compile(r"^\s*(?:私が書きます[:：]\s*)+", re.IGNORECASE)
 
 
 def normalize_backend_name(raw_backend):
@@ -44,6 +58,67 @@ def build_hypura_command(executable, model_path, host, port, context_size):
         "--context",
         str(context_size),
     ]
+
+
+def sequence_matches_model(sequence, model_name):
+    if not model_name:
+        return False
+    model_name = str(model_name).lower()
+    for candidate in sequence.get("model_names", []):
+        if str(candidate).lower() in model_name:
+            return True
+    return False
+
+
+def find_sequence_config(sequences, model_names):
+    for sequence in sequences.values():
+        for model_name in model_names:
+            if sequence_matches_model(sequence, model_name):
+                return sequence
+    return None
+
+
+def looks_wrapped_prompt(text):
+    if not text:
+        return False
+    return any(marker in text for marker in WRAPPED_PROMPT_MARKERS)
+
+
+def format_prompt_for_generate(text, sequence):
+    if sequence is None:
+        return text
+    if not sequence.get("auto_instruct", False):
+        return text
+    template = sequence.get("instruct")
+    if not template or "{0}" not in template:
+        return text
+    if looks_wrapped_prompt(text):
+        return text
+    return template.format(text)
+
+
+def apply_sequence_generate_args(args, sequence):
+    if sequence is None:
+        return args
+    overrides = sequence.get("generate_args")
+    if not isinstance(overrides, dict):
+        return args
+    for key, value in overrides.items():
+        if key in args:
+            args[key] = value
+    return args
+
+
+def clean_generated_text(text):
+    if not text:
+        return text
+    cleaned = THINK_BLOCK_RE.sub("", text)
+    think_start = cleaned.lower().find("<think>")
+    if think_start != -1:
+        cleaned = cleaned[:think_start]
+    cleaned = THINK_MARKER_RE.sub("", cleaned)
+    cleaned = LEADING_META_RE.sub("", cleaned)
+    return cleaned.lstrip()
 
 
 class KoboldCpp:
@@ -145,6 +220,10 @@ popd
         if llm_name in self.ctx.llm:
             return llm_name, self.ctx.llm[llm_name], None
 
+        recovered_llm = self._recover_direct_selected_model(llm_name)
+        if recovered_llm is not None:
+            return llm_name, recovered_llm, None
+
         if DEFAULT_LLM_NAME in self.ctx.llm:
             llm_name = DEFAULT_LLM_NAME
         else:
@@ -156,6 +235,35 @@ popd
         self.ctx["llm_name"] = llm_name
         self.ctx["llm_gpu_layer"] = DEFAULT_GPU_LAYER
         return llm_name, self.ctx.llm[llm_name], None
+
+    def _recover_direct_selected_model(self, llm_name):
+        if not isinstance(llm_name, str) or not llm_name.startswith(DIRECT_SELECT_PREFIX):
+            return None
+
+        model_name = llm_name[len(DIRECT_SELECT_PREFIX):].strip()
+        if not model_name:
+            return None
+
+        file_name = f"{model_name}.gguf"
+        model_path = os.path.join(Path.kobold_cpp, file_name)
+        if not os.path.exists(model_path):
+            return None
+
+        gpu_layer = self.ctx["llm_gpu_layer"]
+        if gpu_layer is None:
+            gpu_layer = DEFAULT_GPU_LAYER
+
+        llm = {
+            "max_gpu_layer": gpu_layer,
+            "context_size": 4096,
+            "urls": [f"file://{model_path}"],
+            "file_name": file_name,
+            "name": model_name,
+            "local_file": True,
+            "temporary": True,
+        }
+        self.ctx.llm[llm_name] = llm
+        return llm
 
     def _resolve_model_path(self, llm):
         if llm.get("local_file", False) and llm.get("urls"):
@@ -196,24 +304,39 @@ popd
         return None
 
     def get_instruct_sequence(self):
-        if self.model_name is None:
+        sequence = self._get_sequence_config()
+        if sequence is None:
             return None
+        return sequence["instruct"]
 
-        for sequence in self.ctx.llm_sequence.values():
-            for model_name in sequence["model_names"]:
-                if model_name in self.model_name:
-                    return sequence["instruct"]
-        return None
+    def _get_model_name_hints(self):
+        names = []
+        if self.model_name is not None:
+            names.append(self.model_name)
+
+        configured_name = self.ctx["llm_name"]
+        if configured_name:
+            names.append(configured_name)
+            llm = self.ctx.llm.get(configured_name)
+            if llm is not None:
+                if "name" in llm:
+                    names.append(llm["name"])
+                if "file_name" in llm:
+                    names.append(llm["file_name"])
+        return names
+
+    def _get_sequence_config(self):
+        return find_sequence_config(self.ctx.llm_sequence, self._get_model_name_hints())
 
     def get_stop_sequence(self):
-        if self.model_name is None:
-            return []
-
-        for sequence in self.ctx.llm_sequence.values():
-            for model_name in sequence["model_names"]:
-                if model_name in self.model_name:
-                    return sequence["stop"]
+        sequence = self._get_sequence_config()
+        if sequence is not None:
+            return sequence.get("stop", [])
         return []
+
+    def formats_prompt_for_generate(self, text):
+        sequence = self._get_sequence_config()
+        return format_prompt_for_generate(text, sequence) != text
 
     def download_model(self, llm_name):
         llm = self.ctx.llm[llm_name]
@@ -333,10 +456,13 @@ popd
             )
             self.ctx["max_length"] = max_context_length // 2
 
-        return {
+        sequence = self._get_sequence_config()
+        prompt = format_prompt_for_generate(text, sequence)
+
+        args = {
             "max_context_length": max_context_length,
             "max_length": self.ctx["max_length"],
-            "prompt": text,
+            "prompt": prompt,
             "quiet": False,
             "stop_sequence": self.get_stop_sequence(),
             "rep_pen": self.ctx["rep_pen"],
@@ -351,6 +477,7 @@ popd
             "min_p": self.ctx["min_p"],
             "sampler_order": self.ctx["sampler_order"],
         }
+        return apply_sequence_generate_args(args, sequence)
 
     def generate(self, text):
         try:
@@ -365,7 +492,10 @@ popd
             if response.status_code == 200:
                 if self.model_name is not None:
                     args["model_name"] = self.model_name
-                args["result"] = response.json()["results"][0]["text"]
+                raw_result = response.json()["results"][0]["text"]
+                args["result"] = clean_generated_text(raw_result)
+                if args["result"] != raw_result:
+                    args["raw_result"] = raw_result
                 print(f'KoboldCpp.generate(): {args["result"]}')
                 with open(Path.generate_log, "a", encoding="utf-8-sig") as file:
                     json.dump(args, file, indent=4, ensure_ascii=False)
@@ -414,7 +544,7 @@ popd
                 if on_token is not None:
                     on_token(token)
 
-            full_text = "".join(full_parts)
+            full_text = clean_generated_text("".join(full_parts))
             if self.model_name is not None:
                 args["model_name"] = self.model_name
             args["result"] = full_text
@@ -430,7 +560,7 @@ popd
         try:
             response = requests.get(self.check_url, timeout=self.ctx["koboldcpp_command_timeout"])
             if response.status_code == 200:
-                return response.json()["results"][0]["text"]
+                return clean_generated_text(response.json()["results"][0]["text"])
             print(f"[失敗] KoboldCpp.check(): {response.text}")
         except Exception:
             pass
