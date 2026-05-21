@@ -1,6 +1,7 @@
 ﻿import os
 import json
 import threading
+import time
 import tkinter as tk
 from tkinter import simpledialog, filedialog, messagebox
 
@@ -156,15 +157,26 @@ class ModelMenu:
             parent=self.form.win
         )
 
-    def _handle_launch_result(self, result, success_message=None):
+    def _handle_launch_result(self, result, success_message=None, enable_generation=False):
         if result is not None:
             print(result)
             messagebox.showerror("エラー", result, parent=self.form.win)
         elif success_message:
             messagebox.showinfo("完了", success_message, parent=self.form.win)
 
+        if enable_generation and hasattr(self.ctx, "generator"):
+            self.ctx.generator.enabled = True
+
         if hasattr(self.form, "update_title"):
             self.form.update_title()
+
+    def _wait_for_hypura_model_ready(self, timeout_sec=120, interval_sec=0.5):
+        deadline = time.monotonic() + timeout_sec
+        while time.monotonic() < deadline:
+            if self.ctx.kobold_cpp.get_model() is not None:
+                return True
+            time.sleep(interval_sec)
+        return False
 
     def _launch_server_async(self, success_message=None):
         def launch_worker():
@@ -173,8 +185,24 @@ class ModelMenu:
             except Exception as error:
                 result = f"モデルサーバーの起動中にエラーが発生しました:\n{error}"
 
+            enable_generation = False
+            if result is None and self._is_hypura_backend():
+                enable_generation = self._wait_for_hypura_model_ready()
+                if not enable_generation:
+                    result = (
+                        "Hypura を起動しましたが、モデル準備完了を確認できませんでした。\n"
+                        "Hypura のコンソールログを確認してから、もう一度生成を開始してください。"
+                    )
+
             try:
-                self.form.win.after(0, lambda: self._handle_launch_result(result, success_message))
+                self.form.win.after(
+                    0,
+                    lambda: self._handle_launch_result(
+                        result,
+                        success_message,
+                        enable_generation=enable_generation,
+                    ),
+                )
             except Exception as error:
                 print(f"モデルサーバー起動結果のUI反映に失敗: {error}")
 
@@ -236,6 +264,8 @@ class ModelMenu:
             
             # コンテキストに一時的に追加
             self.ctx.llm[temp_model_name] = model_config
+            self.ctx["direct_gguf_model_name"] = temp_model_name
+            self.ctx["direct_gguf_model"] = model_config
             
             # 直接モデルを選択して起動
             self.ctx["llm_name"] = temp_model_name

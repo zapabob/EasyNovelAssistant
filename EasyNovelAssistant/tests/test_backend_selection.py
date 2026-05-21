@@ -10,6 +10,7 @@ if str(SRC_DIR) not in sys.path:
 DEFAULT_SEQUENCE_PATH = Path(__file__).resolve().parents[1] / "setup" / "res" / "default_llm_sequence.json"
 
 from kobold_cpp import (
+    DIRECT_SELECT_PREFIX,
     KoboldCpp,
     apply_sequence_generate_args,
     build_hypura_command,
@@ -137,6 +138,35 @@ def test_koboldcpp_direct_gguf_keeps_gpu_layer_dialog(monkeypatch):
     menu.form = DummyForm()
 
     assert menu._ask_gpu_layers_for_direct_gguf("model.gguf") == 41
+
+
+def test_direct_gguf_launch_result_enables_generation_without_success_modal(monkeypatch):
+    class DummyGenerator:
+        enabled = False
+
+    class DummyContext:
+        generator = DummyGenerator()
+
+    class DummyForm:
+        win = object()
+
+        def __init__(self):
+            self.title_updates = 0
+
+        def update_title(self):
+            self.title_updates += 1
+
+    monkeypatch.setattr("menu.model_menu.messagebox.showinfo", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr("menu.model_menu.messagebox.showerror", lambda *_args, **_kwargs: None)
+
+    menu = object.__new__(ModelMenu)
+    menu.ctx = DummyContext()
+    menu.form = DummyForm()
+
+    menu._handle_launch_result(None, enable_generation=True)
+
+    assert menu.ctx.generator.enabled is True
+    assert menu.form.title_updates == 1
 
 
 def test_qwen_sequence_matches_local_gguf_names():
@@ -325,6 +355,50 @@ def test_koboldcpp_recovers_direct_selected_model_from_copied_gguf(tmp_path, mon
     assert selected_name == llm_name
     assert llm["file_name"] == f"{model_name}.gguf"
     assert llm["name"] == model_name
+    assert llm["local_file"] is True
+    assert llm["urls"] == [f"file://{model_file}"]
+
+
+def test_koboldcpp_recovers_direct_selected_model_from_saved_attach_config(tmp_path):
+    class DummyContext:
+        def __init__(self, **kwargs):
+            self.cfg = kwargs
+
+        def __getitem__(self, key):
+            return self.cfg.get(key)
+
+        def __setitem__(self, key, value):
+            self.cfg[key] = value
+
+    model_name = "attached-hypura-model"
+    llm_name = f"{DIRECT_SELECT_PREFIX}{model_name}"
+    model_file = tmp_path / f"{model_name}.gguf"
+    model_file.write_bytes(b"GGUF")
+    attached_config = build_local_gguf_model_config(
+        target_path=str(model_file),
+        file_name=model_file.name,
+        model_name=model_name,
+        gpu_layers=0,
+        context_size=4096,
+        temporary=True,
+    )
+
+    ctx = DummyContext(
+        llm_name=llm_name,
+        llm_gpu_layer=0,
+        direct_gguf_model_name=llm_name,
+        direct_gguf_model=attached_config,
+    )
+    ctx.llm = {}
+    kobold = object.__new__(KoboldCpp)
+    kobold.ctx = ctx
+    kobold.model_name = None
+
+    selected_name, llm, error = kobold._ensure_selected_model()
+
+    assert error is None
+    assert selected_name == llm_name
+    assert llm["file_name"] == model_file.name
     assert llm["local_file"] is True
     assert llm["urls"] == [f"file://{model_file}"]
 

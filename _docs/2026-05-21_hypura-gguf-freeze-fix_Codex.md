@@ -32,3 +32,27 @@ git diff --check
 ```
 
 Result: all checks passed.
+
+## Follow-up: generation did not start after attach
+
+After the first freeze fix, Hypura launch and EasyNovelAssistant generation
+enablement were separated. Hypura also needs time before `/api/v1/model` starts
+answering, so the attach flow now waits for that readiness signal before turning
+generation on.
+
+Additional hardening:
+
+- Store the direct GGUF attach metadata in `config.json` so a Hypura source path
+  can be restored after app restart.
+- Recover direct-selected models from that saved attach metadata before falling
+  back to the legacy KoboldCpp copied-file lookup.
+
+Additional verification:
+
+```powershell
+python -m pytest EasyNovelAssistant\tests\test_backend_selection.py -q
+python -m py_compile EasyNovelAssistant\src\kobold_cpp.py EasyNovelAssistant\src\generator.py EasyNovelAssistant\src\menu\model_menu.py EasyNovelAssistant\src\menu\setting_menu.py
+git diff --check
+```
+
+Result: all checks passed with 20 tests.

@@ -240,6 +240,14 @@ popd
         if not isinstance(llm_name, str) or not llm_name.startswith(DIRECT_SELECT_PREFIX):
             return None
 
+        stored_name = self.ctx["direct_gguf_model_name"]
+        stored_llm = self.ctx["direct_gguf_model"]
+        if llm_name == stored_name and isinstance(stored_llm, dict):
+            stored_path = self._resolve_model_path(stored_llm)
+            if os.path.exists(stored_path):
+                self.ctx.llm[llm_name] = stored_llm
+                return stored_llm
+
         model_name = llm_name[len(DIRECT_SELECT_PREFIX):].strip()
         if not model_name:
             return None
