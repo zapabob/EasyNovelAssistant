@@ -1,5 +1,6 @@
 ﻿import os
 import json
+import threading
 import tkinter as tk
 from tkinter import simpledialog, filedialog, messagebox
 
@@ -138,6 +139,47 @@ class ModelMenu:
             print(result)
             messagebox.showerror("エラー", result, parent=self.form.win)
 
+    def _is_hypura_backend(self):
+        return self.ctx.kobold_cpp.backend == HYPURA_BACKEND
+
+    def _ask_gpu_layers_for_direct_gguf(self, file_name):
+        if self._is_hypura_backend():
+            gpu_layers = self.ctx["llm_gpu_layer"]
+            return gpu_layers if gpu_layers is not None else 0
+
+        return simpledialog.askinteger(
+            "GPU層数設定",
+            f"GPU層数を入力してください:\n\nファイル: {file_name}\n\n7Bモデル: 33\n13Bモデル: 41\n70Bモデル: 65",
+            initialvalue=33,
+            minvalue=0,
+            maxvalue=100,
+            parent=self.form.win
+        )
+
+    def _handle_launch_result(self, result, success_message=None):
+        if result is not None:
+            print(result)
+            messagebox.showerror("エラー", result, parent=self.form.win)
+        elif success_message:
+            messagebox.showinfo("完了", success_message, parent=self.form.win)
+
+        if hasattr(self.form, "update_title"):
+            self.form.update_title()
+
+    def _launch_server_async(self, success_message=None):
+        def launch_worker():
+            try:
+                result = self.ctx.kobold_cpp.launch_server()
+            except Exception as error:
+                result = f"モデルサーバーの起動中にエラーが発生しました:\n{error}"
+
+            try:
+                self.form.win.after(0, lambda: self._handle_launch_result(result, success_message))
+            except Exception as error:
+                print(f"モデルサーバー起動結果のUI反映に失敗: {error}")
+
+        threading.Thread(target=launch_worker, daemon=True).start()
+
     def select_gguf_file_directly(self):
         """GGUFファイルを直接選択して即座に使用する機能"""
         try:
@@ -162,16 +204,8 @@ class ModelMenu:
             # ファイル名を取得
             file_name = os.path.basename(file_path)
             model_name = os.path.splitext(file_name)[0]
-            
-            # GPU層数の入力ダイアログ（簡易版）
-            gpu_layers = simpledialog.askinteger(
-                "GPU層数設定",
-                f"GPU層数を入力してください:\n\nファイル: {file_name}\n\n7Bモデル: 33\n13Bモデル: 41\n70Bモデル: 65",
-                initialvalue=33,
-                minvalue=0,
-                maxvalue=100,
-                parent=self.form.win
-            )
+            hypura_backend = self._is_hypura_backend()
+            gpu_layers = self._ask_gpu_layers_for_direct_gguf(file_name)
             
             if gpu_layers is None:
                 return  # キャンセルされた場合
@@ -206,17 +240,19 @@ class ModelMenu:
             # 直接モデルを選択して起動
             self.ctx["llm_name"] = temp_model_name
             self.ctx["llm_gpu_layer"] = gpu_layers
-            
-            result = self.ctx.kobold_cpp.launch_server()
-            if result is not None:
-                print(result)
-                messagebox.showerror("エラー", result, parent=self.form.win)
-            else:
-                messagebox.showinfo(
-                    "完了",
-                    f"GGUFファイルを直接選択しました:\n\nファイル: {file_name}\nGPU層数: {gpu_layers}\n\nモデルサーバーを起動中...",
-                    parent=self.form.win
+
+            success_message = None
+            if not hypura_backend:
+                success_message = (
+                    f"GGUFファイルを直接選択しました:\n\n"
+                    f"ファイル: {file_name}\nGPU層数: {gpu_layers}\n\nモデルサーバーを起動中..."
                 )
+
+            self._launch_server_async(success_message=success_message)
+
+            if hypura_backend:
+                print(f"GGUFファイルをHypuraにアタッチ: {file_name}")
+            else:
                 print(f"GGUFファイルを直接選択: {file_name}")
                 
         except Exception as e:

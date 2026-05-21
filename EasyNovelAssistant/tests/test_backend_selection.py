@@ -19,7 +19,7 @@ from kobold_cpp import (
     format_prompt_for_generate,
     normalize_backend_name,
 )
-from menu.model_menu import build_local_gguf_model_config, choose_gguf_target_path
+from menu.model_menu import ModelMenu, build_local_gguf_model_config, choose_gguf_target_path
 from path import Path as AppPath
 
 
@@ -91,6 +91,52 @@ def test_build_local_gguf_model_config_records_attached_file_path(tmp_path):
         "local_file": True,
         "temporary": True,
     }
+
+
+def test_hypura_direct_gguf_does_not_open_gpu_layer_dialog(monkeypatch):
+    class DummyBackend:
+        backend = "hypura"
+
+    class DummyContext:
+        kobold_cpp = DummyBackend()
+
+        def __getitem__(self, key):
+            if key == "llm_gpu_layer":
+                return 77
+            raise KeyError(key)
+
+    class DummyForm:
+        win = object()
+
+    def fail_if_opened(*_args, **_kwargs):
+        raise AssertionError("Hypura GGUF attach should not ask for KoboldCpp GPU layers")
+
+    monkeypatch.setattr("menu.model_menu.simpledialog.askinteger", fail_if_opened)
+
+    menu = object.__new__(ModelMenu)
+    menu.ctx = DummyContext()
+    menu.form = DummyForm()
+
+    assert menu._ask_gpu_layers_for_direct_gguf("model.gguf") == 77
+
+
+def test_koboldcpp_direct_gguf_keeps_gpu_layer_dialog(monkeypatch):
+    class DummyBackend:
+        backend = "koboldcpp"
+
+    class DummyContext:
+        kobold_cpp = DummyBackend()
+
+    class DummyForm:
+        win = object()
+
+    monkeypatch.setattr("menu.model_menu.simpledialog.askinteger", lambda *_args, **_kwargs: 41)
+
+    menu = object.__new__(ModelMenu)
+    menu.ctx = DummyContext()
+    menu.form = DummyForm()
+
+    assert menu._ask_gpu_layers_for_direct_gguf("model.gguf") == 41
 
 
 def test_qwen_sequence_matches_local_gguf_names():
