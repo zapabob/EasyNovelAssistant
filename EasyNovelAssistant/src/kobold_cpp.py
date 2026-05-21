@@ -3,6 +3,7 @@ import os
 import re
 import shutil
 import subprocess
+import tempfile
 import webbrowser
 from sys import platform
 
@@ -12,6 +13,8 @@ from path import Path
 
 KOBOLDCPP_BACKEND = "koboldcpp"
 HYPURA_BACKEND = "hypura"
+HYPURA_MIN_TEMP_FREE_BYTES = 8 * 1024 * 1024 * 1024
+HYPURA_TEMP_DIR_ENV = "HYPURA_TEMP_DIR"
 DEFAULT_LLM_NAME = "[元祖] LightChatAssistant-TypeB-2x7B-IQ4_XS"
 DEFAULT_GPU_LAYER = 0
 DIRECT_SELECT_PREFIX = "[直接選択] "
@@ -58,6 +61,45 @@ def build_hypura_command(executable, model_path, host, port, context_size):
         "--context",
         str(context_size),
     ]
+
+
+def resolve_hypura_temp_dir(min_free_bytes=HYPURA_MIN_TEMP_FREE_BYTES):
+    configured = os.environ.get(HYPURA_TEMP_DIR_ENV)
+    if configured:
+        os.makedirs(configured, exist_ok=True)
+        return configured
+
+    current_temp = tempfile.gettempdir()
+    candidates = [current_temp]
+    if platform == "win32":
+        for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ":
+            root = f"{letter}:\\"
+            if os.path.exists(root):
+                candidates.append(root)
+
+    best_path = current_temp
+    best_free = -1
+    for candidate in dict.fromkeys(candidates):
+        try:
+            free_bytes = shutil.disk_usage(candidate).free
+        except OSError:
+            continue
+        if free_bytes > best_free:
+            best_path = candidate
+            best_free = free_bytes
+
+    try:
+        current_free = shutil.disk_usage(current_temp).free
+    except OSError:
+        current_free = -1
+
+    root = current_temp
+    if current_free < min_free_bytes and best_free > current_free:
+        root = best_path
+
+    temp_dir = os.path.join(root, "HypuraTemp")
+    os.makedirs(temp_dir, exist_ok=True)
+    return temp_dir
 
 
 def sequence_matches_model(sequence, model_name):
@@ -413,7 +455,13 @@ popd
             context_size=context_size,
         )
 
-        popen_kwargs = {"cwd": os.getcwd()}
+        hypura_env = os.environ.copy()
+        hypura_temp_dir = resolve_hypura_temp_dir()
+        hypura_env["TEMP"] = hypura_temp_dir
+        hypura_env["TMP"] = hypura_temp_dir
+        hypura_env["TMPDIR"] = hypura_temp_dir
+
+        popen_kwargs = {"cwd": os.getcwd(), "env": hypura_env}
         if platform == "win32" and hasattr(subprocess, "CREATE_NEW_CONSOLE"):
             popen_kwargs["creationflags"] = subprocess.CREATE_NEW_CONSOLE
 

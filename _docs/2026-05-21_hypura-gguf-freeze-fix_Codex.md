@@ -56,3 +56,34 @@ git diff --check
 ```
 
 Result: all checks passed with 20 tests.
+
+## Follow-up: Hypura extraction failed on full C drive
+
+Hypura failed before model startup with PyInstaller-style extraction errors such
+as `_decimal.pyd` and `cublas64_12.dll`. The machine had only about `0.04 GB`
+free on `C:` and `%TEMP%` pointed at `C:\Users\downl\AppData\Local\Temp`.
+
+Immediate remediation:
+
+- Removed stale `%TEMP%` extraction/build leftovers such as `_MEI*`,
+  `go-build*`, `pytest-of-*`, and old temp files.
+- Recovered `C:` free space to about `5.21 GB`.
+
+Code hardening:
+
+- Hypura subprocess launches now receive `TEMP`, `TMP`, and `TMPDIR` pointing to
+  a dedicated temp directory on a drive with more free space when the default
+  temp drive is low.
+- On this PC the resolver selects `H:\HypuraTemp`.
+- `HYPURA_TEMP_DIR` can override that directory for explicit local setups.
+
+Additional verification:
+
+```powershell
+python -m pytest EasyNovelAssistant\tests\test_backend_selection.py -q
+python -m py_compile EasyNovelAssistant\src\kobold_cpp.py EasyNovelAssistant\src\generator.py EasyNovelAssistant\src\menu\model_menu.py EasyNovelAssistant\src\menu\setting_menu.py
+$env:PYTHONPATH='EasyNovelAssistant\src'; python -c "from kobold_cpp import resolve_hypura_temp_dir; print(resolve_hypura_temp_dir())"
+```
+
+Result: all checks passed with 22 tests, and the resolver printed
+`H:\HypuraTemp`.

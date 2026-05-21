@@ -19,6 +19,7 @@ from kobold_cpp import (
     find_sequence_config,
     format_prompt_for_generate,
     normalize_backend_name,
+    resolve_hypura_temp_dir,
 )
 from menu.model_menu import ModelMenu, build_local_gguf_model_config, choose_gguf_target_path
 from path import Path as AppPath
@@ -55,6 +56,14 @@ def test_build_hypura_command_uses_compat_mode():
 
     assert command[:3] == ["hypura", "koboldcpp", "C:/models/demo.gguf"]
     assert command[3:] == ["--host", "127.0.0.1", "--port", "5001", "--context", "8192"]
+
+
+def test_resolve_hypura_temp_dir_uses_env_override(tmp_path, monkeypatch):
+    temp_dir = tmp_path / "hypura-temp"
+    monkeypatch.setenv("HYPURA_TEMP_DIR", str(temp_dir))
+
+    assert resolve_hypura_temp_dir() == str(temp_dir)
+    assert temp_dir.is_dir()
 
 
 def test_choose_gguf_target_path_keeps_source_for_hypura(tmp_path):
@@ -401,6 +410,41 @@ def test_koboldcpp_recovers_direct_selected_model_from_saved_attach_config(tmp_p
     assert llm["file_name"] == model_file.name
     assert llm["local_file"] is True
     assert llm["urls"] == [f"file://{model_file}"]
+
+
+def test_launch_hypura_passes_selected_temp_dir(tmp_path, monkeypatch):
+    class DummyContext:
+        def __init__(self, **kwargs):
+            self.cfg = kwargs
+
+        def __getitem__(self, key):
+            return self.cfg.get(key)
+
+    captured = {}
+
+    def fake_popen(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+
+    temp_dir = tmp_path / "hypura-temp"
+    model_file = tmp_path / "model.gguf"
+    model_file.write_bytes(b"GGUF")
+    monkeypatch.setenv("HYPURA_TEMP_DIR", str(temp_dir))
+    monkeypatch.setattr("kobold_cpp.subprocess.Popen", fake_popen)
+    monkeypatch.setattr(KoboldCpp, "_resolve_hypura_executable", lambda _self: "C:/tools/hypura.exe")
+
+    ctx = DummyContext(
+        hypura_path="C:/tools/hypura.exe",
+        koboldcpp_host="127.0.0.1",
+        koboldcpp_port=5001,
+    )
+    kobold = object.__new__(KoboldCpp)
+    kobold.ctx = ctx
+
+    assert kobold._launch_hypura(str(model_file), 4096) is None
+    assert captured["kwargs"]["env"]["TEMP"] == str(temp_dir)
+    assert captured["kwargs"]["env"]["TMP"] == str(temp_dir)
+    assert captured["kwargs"]["env"]["TMPDIR"] == str(temp_dir)
 
 
 def test_koboldcpp_uses_configured_model_name_for_sequence_lookup():
