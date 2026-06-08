@@ -21,8 +21,10 @@ from kobold_cpp import (
     normalize_backend_name,
     resolve_hypura_temp_dir,
 )
+from irodori_tts import IrodoriTts
 from menu.model_menu import ModelMenu, build_local_gguf_model_config, choose_gguf_target_path
 from path import Path as AppPath
+from speech_manager import IRODORI_TTS, STYLE_BERT_VITS2, normalize_speech_engine
 
 
 def load_default_sequences():
@@ -43,6 +45,64 @@ def test_normalize_backend_name_accepts_hypura():
 def test_display_backend_name_is_user_facing():
     assert display_backend_name("koboldcpp") == "KoboldCpp"
     assert display_backend_name("hypura") == "Hypura"
+
+
+def test_normalize_speech_engine_defaults_to_style_bert_vits2():
+    assert normalize_speech_engine(None) == STYLE_BERT_VITS2
+    assert normalize_speech_engine("") == STYLE_BERT_VITS2
+    assert normalize_speech_engine("invalid") == STYLE_BERT_VITS2
+
+
+def test_normalize_speech_engine_accepts_irodori_tts():
+    assert normalize_speech_engine(IRODORI_TTS) == IRODORI_TTS
+
+
+def test_irodori_voice_selection_strips_known_speaker_names():
+    class DummyContext(dict):
+        pass
+
+    ctx = DummyContext(
+        char_name="Alice",
+        user_name="Bob",
+        irodori_char_voice="alice",
+        irodori_user_voice="bob",
+        irodori_other_voice="none",
+    )
+    irodori = object.__new__(IrodoriTts)
+    irodori.ctx = ctx
+
+    voice_id, text = irodori._select_voice_and_text('Alice「こんにちは」', {"alice": {}, "none": {}})
+
+    assert voice_id == "alice"
+    assert text == "こんにちは"
+
+
+def test_irodori_payload_uses_openai_speech_endpoint_shape():
+    class DummyContext(dict):
+        pass
+
+    ctx = DummyContext(
+        irodori_tts_model="irodori-tts",
+        irodori_tts_chunking_enabled=True,
+        irodori_tts_chunk_min_chars=80,
+        irodori_tts_first_sentence_chunk_min_chars=1,
+        irodori_tts_num_steps=24,
+    )
+    irodori = object.__new__(IrodoriTts)
+    irodori.ctx = ctx
+
+    assert irodori._build_payload("こんにちは", "none") == {
+        "model": "irodori-tts",
+        "input": "こんにちは",
+        "voice": "none",
+        "response_format": "wav",
+        "irodori": {
+            "chunking_enabled": True,
+            "chunk_min_chars": 80,
+            "first_sentence_chunk_min_chars": 1,
+            "num_steps": 24,
+        },
+    }
 
 
 def test_build_hypura_command_uses_compat_mode():

@@ -15,6 +15,9 @@ Style-Bert-VITS2/pretrained/
 Style-Bert-VITS2/pretrained_jp_extra/
 Style-Bert-VITS2/bert/*/
 Style-Bert-VITS2/slm/*/
+Irodori-TTS-Server/.env
+Irodori-TTS-Server/.venv/
+Irodori-TTS-Server/voices/
 
 # 仮想環境
 venv/
@@ -77,3 +80,4 @@ EasyNovelAssistant/setup/lib/python/Lib/site-packages/
 
 # 外部リポジトリ
 Style-Bert-VITS2/ 
+Irodori-TTS-Server/
