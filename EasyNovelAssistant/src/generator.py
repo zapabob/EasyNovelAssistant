@@ -107,10 +107,10 @@ class Generator:
                             lines = (self.last_line + append_text).splitlines() if (self.last_line + append_text) else []
                             if len(lines) > 0:
                                 for line in lines[:-1]:
-                                    self._auto_speech(line)
+                                    self._handle_generated_line(line)
                                 self.last_line = lines[-1]
                                 if append_text.endswith("\n"):
-                                    self._auto_speech(self.last_line)
+                                    self._handle_generated_line(self.last_line)
                                     self.last_line = ""
                             self.ctx.form.gen_area.append_text(append_text)
                         else:
@@ -118,10 +118,10 @@ class Generator:
                             lines = result.splitlines() if result else []
                             if len(lines) > 0:
                                 for line in lines[:-1]:
-                                    self._auto_speech(line)
+                                    self._handle_generated_line(line)
                                 self.last_line = lines[-1]
                                 if result.endswith("\n"):
-                                    self._auto_speech(self.last_line)
+                                    self._handle_generated_line(self.last_line)
                                     self.last_line = ""
                             else:
                                 self.last_line = ""
@@ -267,6 +267,15 @@ class Generator:
         if self.ctx["auto_speech_other"]:
             self.ctx.speech.generate(text)
 
+    def _auto_image(self, text):
+        if text == "":
+            return
+        self.ctx.image.collect(text)
+
+    def _handle_generated_line(self, text):
+        self._auto_speech(text)
+        self._auto_image(text)
+
     def _generate(self, input_text):
         if self.ctx.kobold_cpp.backend == "hypura":
             return self.ctx.kobold_cpp.generate_stream(input_text, on_token=self._on_stream_token)
@@ -287,10 +296,10 @@ class Generator:
         lines = (self.last_line + append_text).splitlines() if (self.last_line + append_text) else []
         if len(lines) > 0:
             for line in lines[:-1]:
-                self._auto_speech(line)
+                self._handle_generated_line(line)
             self.last_line = lines[-1]
             if append_text.endswith("\n"):
-                self._auto_speech(self.last_line)
+                self._handle_generated_line(self.last_line)
                 self.last_line = ""
         self.ctx.form.gen_area.append_text(append_text)
         self.gen_area_text += append_text
