@@ -1,7 +1,13 @@
 import tkinter as tk
 from tkinter import simpledialog
 
-from image_manager import HUGGING_FACE, IMAGE_PROVIDER_LABELS, STABLE_DIFFUSION_WEBUI, normalize_image_provider
+from image_manager import (
+    HUGGING_FACE,
+    IMAGE_PROVIDER_LABELS,
+    STABLE_DIFFUSION_CPP,
+    STABLE_DIFFUSION_WEBUI,
+    normalize_image_provider,
+)
 
 
 class ImageMenu:
@@ -49,6 +55,43 @@ class ImageMenu:
         self.menu.add_command(
             label=f'Hugging Faceトークン環境変数: {self.ctx["huggingface_image_token_env"]}',
             command=lambda: self._set_string("huggingface_image_token_env", "Hugging Faceトークン環境変数"),
+        )
+        self.menu.add_command(
+            label=f'stable-diffusion.cpp実行ファイル: {self.ctx["stable_diffusion_cpp_executable"] or "(PATHのsd-cli)"}',
+            command=lambda: self._set_string("stable_diffusion_cpp_executable", "stable-diffusion.cpp実行ファイル"),
+        )
+        self.menu.add_command(
+            label="ローカルGGUF diffusionモデル",
+            command=lambda: self._set_string("stable_diffusion_cpp_diffusion_model", "ローカルGGUF diffusionモデル"),
+        )
+        self.menu.add_command(
+            label="ローカルフルモデル",
+            command=lambda: self._set_string("stable_diffusion_cpp_model", "ローカルフルモデル"),
+        )
+        self.menu.add_command(
+            label="ローカルVAE",
+            command=lambda: self._set_string("stable_diffusion_cpp_vae", "ローカルVAE"),
+        )
+        self.menu.add_command(
+            label="ローカルCLIP-L",
+            command=lambda: self._set_string("stable_diffusion_cpp_clip_l", "ローカルCLIP-L"),
+        )
+        self.menu.add_command(
+            label="ローカルCLIP-G",
+            command=lambda: self._set_string("stable_diffusion_cpp_clip_g", "ローカルCLIP-G"),
+        )
+        self.menu.add_command(
+            label="ローカルT5XXL",
+            command=lambda: self._set_string("stable_diffusion_cpp_t5xxl", "ローカルT5XXL"),
+        )
+        self.menu.add_command(
+            label="ローカルLLMテキストエンコーダ",
+            command=lambda: self._set_string("stable_diffusion_cpp_llm", "ローカルLLMテキストエンコーダ"),
+        )
+        self._add_number_menu("stable-diffusion.cppスレッド数", "stable_diffusion_cpp_threads", [-1, 1, 2, 4, 6, 8, 12, 16])
+        self.menu.add_command(
+            label="stable-diffusion.cpp追加CLI引数",
+            command=lambda: self._set_string("stable_diffusion_cpp_extra_args", "stable-diffusion.cpp追加CLI引数"),
         )
 
         self.menu.add_separator()
@@ -103,6 +146,12 @@ class ImageMenu:
             variable=self.provider_var,
             value=HUGGING_FACE,
             command=lambda: self._set_provider(HUGGING_FACE),
+        )
+        provider_menu.add_radiobutton(
+            label=IMAGE_PROVIDER_LABELS[STABLE_DIFFUSION_CPP],
+            variable=self.provider_var,
+            value=STABLE_DIFFUSION_CPP,
+            command=lambda: self._set_provider(STABLE_DIFFUSION_CPP),
         )
 
     def _add_number_menu(self, label, key, values):

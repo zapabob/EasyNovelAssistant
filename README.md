@@ -109,6 +109,11 @@
 - `Stable Diffusion WebUI` 互換APIは `http://127.0.0.1:7860/sdapi/v1/txt2img` を使います。
 - `Hugging Face` は `huggingface_image_model` または `huggingface_image_endpoint_url` を使います。
 - Hugging Face のトークンは `HF_TOKEN` などの環境変数から読みます。値そのものは設定ファイルに保存しません。
+- `ローカル GGUF (stable-diffusion.cpp)` は `sd-cli` / `sd-cli.exe` を直接呼び出します。
+	- `stable_diffusion_cpp_executable` に実行ファイルのパスを設定します。未指定時は `PATH` 上の `sd-cli` を使います。
+	- `stable_diffusion_cpp_diffusion_model` に `.gguf` のdiffusionモデルを設定します。SD1.x/SDXLなどの一体型モデルを使う場合は `stable_diffusion_cpp_model` も利用できます。
+	- FLUX、Qwen Image、Z-Imageなどのモデルでは、必要に応じて `stable_diffusion_cpp_vae`、`stable_diffusion_cpp_clip_l`、`stable_diffusion_cpp_clip_g`、`stable_diffusion_cpp_t5xxl`、`stable_diffusion_cpp_llm` を設定します。
+	- 追加の `--fa`、`--vae-tiling`、`--offload-to-cpu`、`--rng cpu` などは `stable_diffusion_cpp_extra_args` に入れられます。
 - 生成画像と対応するプロンプトは `image/YYYYMMDD/` に保存されます。
 - 毎行ではなく、設定した行数または文字数ごとに本文をまとめて画像生成します。
 
