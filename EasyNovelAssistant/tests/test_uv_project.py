@@ -24,6 +24,17 @@ def test_uv_run_bat_launches_same_app_entrypoint():
     assert "EasyNovelAssistant\\src\\easy_novel_assistant.py" in content
 
 
+def test_combined_easy_sdxl_uv_launcher_starts_webui_and_app():
+    bat_path = PROJECT_ROOT / "Run-EasyNovelAssistant-EasySdxlWebUi-uv.bat"
+    content = bat_path.read_text(encoding="utf-8")
+
+    assert "EASY_SDXL_WEBUI_DIR" in content
+    assert "H:\\EasySdxlWebUi" in content
+    assert "SdxlWebUi-forge.bat" in content
+    assert "--api" in content
+    assert "uv run python EasyNovelAssistant\\src\\easy_novel_assistant.py" in content
+
+
 def test_setup_uses_uv_sync_instead_of_requirements_install():
     setup_bat = (PROJECT_ROOT / "EasyNovelAssistant" / "setup" / "Setup-EasyNovelAssistant.bat").read_text(
         encoding="utf-8"

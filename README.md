@@ -125,6 +125,8 @@
 
 依存関係は `pyproject.toml` に集約しています。Windowsでは `Run-EasyNovelAssistant-uv.bat` から `uv run` で起動できます。既存のインストール処理も `uv sync --active --no-dev` でアプリ依存を同期します。
 
+EasySdxlWebUi と一緒に起動する場合は `Run-EasyNovelAssistant-EasySdxlWebUi-uv.bat` を使えます。既定では `H:\EasySdxlWebUi` を探し、見つからない場合は `EASY_SDXL_WEBUI_DIR` で指定した展開先を使います。Forge版を `--api` 付きで起動してから EasyNovelAssistant を `uv run` で起動します。
+
 **次のステップは [はじめての生成](https://github.com/Zuntan03/EasyNovelAssistant/wiki/%E3%81%AF%E3%81%98%E3%82%81%E3%81%A6%E3%81%AE%E7%94%9F%E6%88%90) です。**
 
 ## 最近の更新
