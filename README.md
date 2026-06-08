@@ -101,6 +101,17 @@
 - `Hypura` を使う場合は、`設定 -> Hypura 実行ファイル` に `hypura.exe` のパスを入れるか、`PATH` から `hypura` を見つけられる状態にしてください。
 - `Hypura` 選択中は `モデル -> GGUFファイルをHypuraにアタッチ...` から任意の `.gguf` を元パスのまま起動対象にできます。
 
+### 自動画像生成
+
+`画像生成` メニューから、生成中の小説本文を挿絵生成APIへ送れます。
+
+- 既定では `自動画像生成` はOFFです。
+- `Stable Diffusion WebUI` 互換APIは `http://127.0.0.1:7860/sdapi/v1/txt2img` を使います。
+- `Hugging Face` は `huggingface_image_model` または `huggingface_image_endpoint_url` を使います。
+- Hugging Face のトークンは `HF_TOKEN` などの環境変数から読みます。値そのものは設定ファイルに保存しません。
+- 生成画像と対応するプロンプトは `image/YYYYMMDD/` に保存されます。
+- 毎行ではなく、設定した行数または文字数ごとに本文をまとめて画像生成します。
+
 **次のステップは [はじめての生成](https://github.com/Zuntan03/EasyNovelAssistant/wiki/%E3%81%AF%E3%81%98%E3%82%81%E3%81%A6%E3%81%AE%E7%94%9F%E6%88%90) です。**
 
 ## 最近の更新

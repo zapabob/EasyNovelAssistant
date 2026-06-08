@@ -34,6 +34,7 @@ EasyNovelAssistant/setup/lib/python/
 # ログファイル
 log/
 speech/
+image/
 
 # 日付の含まれるテキストファイル（一時ファイル、ログ等）
 *2025*.txt

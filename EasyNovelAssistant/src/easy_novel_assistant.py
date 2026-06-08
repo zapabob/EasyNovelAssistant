@@ -4,6 +4,7 @@ from const import Const
 from context import Context
 from form import Form
 from generator import Generator
+from image_manager import ImageManager
 from irodori_tts import IrodoriTts
 from kobold_cpp import KoboldCpp
 from movie_maker import MovieMaker
@@ -24,6 +25,7 @@ class EasyNovelAssistant:
         self.ctx.style_bert_vits2 = StyleBertVits2(self.ctx)
         self.ctx.irodori_tts = IrodoriTts(self.ctx)
         self.ctx.speech = SpeechManager(self.ctx, self.ctx.style_bert_vits2, self.ctx.irodori_tts)
+        self.ctx.image = ImageManager(self.ctx)
         self.ctx.movie_maker = MovieMaker(self.ctx)
         self.ctx.form = Form(self.ctx)
         self.ctx.generator = Generator(self.ctx)
@@ -39,6 +41,7 @@ class EasyNovelAssistant:
     def mainloop(self):
         self.ctx.generator.update()
         self.ctx.speech.update()
+        self.ctx.image.update()
         self.ctx.form.input_area.update()
         self.ctx.form.win.after(self.SLEEP_TIME, self.mainloop)
 

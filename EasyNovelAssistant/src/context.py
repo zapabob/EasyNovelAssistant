@@ -58,3 +58,5 @@ class Context:
 
         if self.generator.enabled:
             self.kobold_cpp.abort()
+        if hasattr(self, "image"):
+            self.image.abort()

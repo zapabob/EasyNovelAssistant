@@ -49,6 +49,9 @@ class Path:
     speech = os.path.join(cwd, "speech")
     daily_speech = os.path.join(speech, YYYYMMDD)
 
+    image = os.path.join(cwd, "image")
+    daily_image = os.path.join(image, YYYYMMDD)
+
     movie = os.path.join(cwd, "movie")
     os.makedirs(movie, exist_ok=True)
     venv = os.path.join(cwd, "venv")
