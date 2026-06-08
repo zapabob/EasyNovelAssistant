@@ -1,7 +1,8 @@
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import messagebox, simpledialog
 
 from image_manager import (
+    EASY_SDXL_WEBUI,
     HUGGING_FACE,
     IMAGE_PROVIDER_LABELS,
     STABLE_DIFFUSION_CPP,
@@ -43,6 +44,26 @@ class ImageMenu:
         self.menu.add_command(
             label=f'画像生成サーバーURL: {self.ctx["image_generation_base_url"]}',
             command=lambda: self._set_string("image_generation_base_url", "画像生成サーバーURL"),
+        )
+        self.menu.add_command(label="EasySdxlWebUiを起動", command=self._launch_easy_sdxl_webui)
+        self.menu.add_command(label="EasySdxlWebUi疎通確認", command=self._check_easy_sdxl_webui)
+        self.menu.add_command(label="EasySdxlWebUiモデル一覧", command=self._show_easy_sdxl_webui_models)
+        self.menu.add_command(label="EasySdxlWebUi進捗表示", command=self._show_easy_sdxl_webui_progress)
+        self.menu.add_command(
+            label=f'EasySdxlWebUiモード: {self.ctx["easy_sdxl_webui_mode"]}',
+            command=lambda: self._set_string("easy_sdxl_webui_mode", "EasySdxlWebUiモード forge または a1111"),
+        )
+        self.menu.add_command(
+            label="EasySdxlWebUi forge起動bat",
+            command=lambda: self._set_string("easy_sdxl_webui_forge_bat", "EasySdxlWebUi forge起動bat"),
+        )
+        self.menu.add_command(
+            label="EasySdxlWebUi a1111起動bat",
+            command=lambda: self._set_string("easy_sdxl_webui_a1111_bat", "EasySdxlWebUi a1111起動bat"),
+        )
+        self.menu.add_command(
+            label="EasySdxlWebUi追加起動引数",
+            command=lambda: self._set_string("easy_sdxl_webui_extra_args", "EasySdxlWebUi追加起動引数"),
         )
         self.menu.add_command(
             label=f'Hugging Faceモデル: {self.ctx["huggingface_image_model"]}',
@@ -142,6 +163,12 @@ class ImageMenu:
             command=lambda: self._set_provider(STABLE_DIFFUSION_WEBUI),
         )
         provider_menu.add_radiobutton(
+            label=IMAGE_PROVIDER_LABELS[EASY_SDXL_WEBUI],
+            variable=self.provider_var,
+            value=EASY_SDXL_WEBUI,
+            command=lambda: self._set_provider(EASY_SDXL_WEBUI),
+        )
+        provider_menu.add_radiobutton(
             label=IMAGE_PROVIDER_LABELS[HUGGING_FACE],
             variable=self.provider_var,
             value=HUGGING_FACE,
@@ -186,6 +213,36 @@ class ImageMenu:
     def _generate_from_recent(self):
         text = self.ctx.generator.gen_area_text or self.ctx.form.input_area.get_comment_removed_text()
         self.ctx.image.generate(text, force=True)
+
+    def _launch_easy_sdxl_webui(self):
+        if self.ctx.image.launch_easy_sdxl_webui():
+            messagebox.showinfo("EasySdxlWebUi", "EasySdxlWebUiを起動しました。", parent=self.form.win)
+        else:
+            messagebox.showerror("EasySdxlWebUi", "EasySdxlWebUiの起動に失敗しました。", parent=self.form.win)
+
+    def _check_easy_sdxl_webui(self):
+        status = self.ctx.image.check_easy_sdxl_webui_status()
+        if status["ok"]:
+            model = status["model"] or "(モデル未取得)"
+            messagebox.showinfo("EasySdxlWebUi", f"疎通確認OKです。\n現在のモデル: {model}", parent=self.form.win)
+        else:
+            messagebox.showerror("EasySdxlWebUi", f"疎通確認に失敗しました。\n{status.get('error', '')}", parent=self.form.win)
+
+    def _show_easy_sdxl_webui_models(self):
+        models = self.ctx.image.list_easy_sdxl_webui_models()
+        text = "\n".join(models[:80]) if models else "モデルを取得できませんでした。"
+        messagebox.showinfo("EasySdxlWebUiモデル一覧", text, parent=self.form.win)
+
+    def _show_easy_sdxl_webui_progress(self):
+        progress = self.ctx.image.easy_sdxl_webui_progress()
+        percent = float(progress.get("progress", 0.0)) * 100
+        eta = progress.get("eta_relative", 0.0)
+        job = progress.get("job", "")
+        messagebox.showinfo(
+            "EasySdxlWebUi進捗",
+            f"進捗: {percent:.1f}%\n残り秒数: {eta}\nジョブ: {job}",
+            parent=self.form.win,
+        )
 
     def _set_provider(self, provider):
         self.ctx["image_generation_provider"] = normalize_image_provider(provider)
