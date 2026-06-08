@@ -7,7 +7,13 @@ SRC_DIR = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from image_manager import HUGGING_FACE, STABLE_DIFFUSION_WEBUI, ImageManager, normalize_image_provider
+from image_manager import (
+    HUGGING_FACE,
+    STABLE_DIFFUSION_CPP,
+    STABLE_DIFFUSION_WEBUI,
+    ImageManager,
+    normalize_image_provider,
+)
 from path import Path as AppPath
 
 
@@ -27,6 +33,16 @@ def image_context(**overrides):
         "huggingface_image_model": "stabilityai/stable-diffusion-xl-base-1.0",
         "huggingface_image_endpoint_url": "",
         "huggingface_image_token_env": "HF_TOKEN",
+        "stable_diffusion_cpp_executable": "sd-cli",
+        "stable_diffusion_cpp_model": "",
+        "stable_diffusion_cpp_diffusion_model": "",
+        "stable_diffusion_cpp_vae": "",
+        "stable_diffusion_cpp_clip_l": "",
+        "stable_diffusion_cpp_clip_g": "",
+        "stable_diffusion_cpp_t5xxl": "",
+        "stable_diffusion_cpp_llm": "",
+        "stable_diffusion_cpp_threads": -1,
+        "stable_diffusion_cpp_extra_args": "",
         "image_generation_timeout": 120,
         "image_generation_width": 1024,
         "image_generation_height": 1024,
@@ -63,6 +79,10 @@ def test_normalize_image_provider_defaults_to_stable_diffusion_webui():
 
 def test_normalize_image_provider_accepts_huggingface():
     assert normalize_image_provider(HUGGING_FACE) == HUGGING_FACE
+
+
+def test_normalize_image_provider_accepts_stable_diffusion_cpp():
+    assert normalize_image_provider(STABLE_DIFFUSION_CPP) == STABLE_DIFFUSION_CPP
 
 
 def test_image_prompt_template_receives_story_and_names():
@@ -155,3 +175,73 @@ def test_huggingface_payload_and_image_save(tmp_path, monkeypatch):
     assert captured["timeout"] == 120
     assert len(paths) == 1
     assert Path(paths[0]).read_bytes() == b"\x89PNG\r\n\x1a\nhf"
+
+
+def test_stable_diffusion_cpp_command_and_image_save(tmp_path, monkeypatch):
+    ctx = image_context(
+        image_generation_provider=STABLE_DIFFUSION_CPP,
+        image_generation_sampler="Euler a",
+        image_generation_seed=123,
+        stable_diffusion_cpp_executable="C:/tools/sd-cli.exe",
+        stable_diffusion_cpp_diffusion_model="C:/models/flux-q4.gguf",
+        stable_diffusion_cpp_vae="C:/models/ae.safetensors",
+        stable_diffusion_cpp_clip_l="C:/models/clip_l.safetensors",
+        stable_diffusion_cpp_t5xxl="C:/models/t5xxl_fp16.safetensors",
+        stable_diffusion_cpp_threads=6,
+        stable_diffusion_cpp_extra_args="--vae-tiling --rng cpu",
+    )
+    manager = manager_for(ctx)
+    monkeypatch.setattr(AppPath, "daily_image", str(tmp_path))
+
+    captured = {}
+
+    class FakeResult:
+        returncode = 0
+        stdout = "ok"
+        stderr = ""
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        output_path = Path(command[command.index("-o") + 1])
+        output_path.write_bytes(b"\x89PNG\r\n\x1a\nlocal")
+        return FakeResult()
+
+    monkeypatch.setattr("image_manager.subprocess.run", fake_run)
+
+    paths = manager._generate_stable_diffusion_cpp("prompt text", "source text")
+
+    assert captured["command"][:4] == ["C:/tools/sd-cli.exe", "-M", "img_gen", "-p"]
+    assert captured["command"][captured["command"].index("--diffusion-model") + 1] == "C:/models/flux-q4.gguf"
+    assert captured["command"][captured["command"].index("--vae") + 1] == "C:/models/ae.safetensors"
+    assert captured["command"][captured["command"].index("--clip_l") + 1] == "C:/models/clip_l.safetensors"
+    assert captured["command"][captured["command"].index("--t5xxl") + 1] == "C:/models/t5xxl_fp16.safetensors"
+    assert captured["command"][captured["command"].index("--sampling-method") + 1] == "euler_a"
+    assert captured["command"][captured["command"].index("-s") + 1] == "123"
+    assert captured["command"][captured["command"].index("-t") + 1] == "6"
+    assert "--vae-tiling" in captured["command"]
+    assert "--rng" in captured["command"]
+    assert captured["kwargs"]["timeout"] == 120
+    assert len(paths) == 1
+    assert Path(paths[0]).read_bytes() == b"\x89PNG\r\n\x1a\nlocal"
+    assert Path(paths[0]).with_suffix(".txt").read_text(encoding="utf-8-sig").startswith("# Prompt\nprompt text")
+
+
+def test_stable_diffusion_cpp_requires_model_path(monkeypatch):
+    ctx = image_context(image_generation_provider=STABLE_DIFFUSION_CPP)
+    manager = manager_for(ctx)
+
+    def fail_if_run(*_args, **_kwargs):
+        raise AssertionError("stable-diffusion.cpp should not run without a model path")
+
+    monkeypatch.setattr("image_manager.subprocess.run", fail_if_run)
+
+    assert manager._generate_stable_diffusion_cpp("prompt text", "source text") is None
+
+
+def test_stable_diffusion_cpp_extra_args_strip_quotes_on_windows():
+    manager = manager_for(image_context())
+
+    args = manager._split_extra_args('--lora-model-dir "C:/models/my lora" --rng cpu')
+
+    assert args == ["--lora-model-dir", "C:/models/my lora", "--rng", "cpu"]

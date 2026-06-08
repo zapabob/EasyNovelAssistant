@@ -1,5 +1,7 @@
 import base64
 import os
+import shlex
+import subprocess
 import time
 
 import requests
@@ -9,10 +11,12 @@ from path import Path
 
 STABLE_DIFFUSION_WEBUI = "stable_diffusion_webui"
 HUGGING_FACE = "huggingface"
+STABLE_DIFFUSION_CPP = "stable_diffusion_cpp"
 
 IMAGE_PROVIDER_LABELS = {
     STABLE_DIFFUSION_WEBUI: "Stable Diffusion WebUI",
     HUGGING_FACE: "Hugging Face",
+    STABLE_DIFFUSION_CPP: "ローカル GGUF (stable-diffusion.cpp)",
 }
 
 
@@ -97,6 +101,8 @@ class ImageManager:
         provider = normalize_image_provider(self.ctx["image_generation_provider"])
         if provider == HUGGING_FACE:
             return self._generate_huggingface(prompt, source_text)
+        if provider == STABLE_DIFFUSION_CPP:
+            return self._generate_stable_diffusion_cpp(prompt, source_text)
         return self._generate_stable_diffusion_webui(prompt, source_text)
 
     def _generate_stable_diffusion_webui(self, prompt, source_text):
@@ -187,22 +193,179 @@ class ImageManager:
             print(f"[Exception] Hugging Face image generation: {e}")
         return None
 
+    def _generate_stable_diffusion_cpp(self, prompt, source_text):
+        output_path = self._next_image_path(source_text, ".png")
+        command, error = self._build_stable_diffusion_cpp_command(prompt, output_path)
+        if error:
+            print(f"[Failed] stable-diffusion.cpp image generation: {error}")
+            return None
+
+        try:
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                timeout=self._int_config("image_generation_timeout", 120),
+            )
+        except subprocess.TimeoutExpired:
+            print("[Failed] stable-diffusion.cpp image generation: timeout")
+            return None
+        except Exception as e:
+            print(f"[Exception] stable-diffusion.cpp image generation: {e}")
+            return None
+
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            print(f"[Failed] stable-diffusion.cpp image generation: {detail}")
+            return None
+
+        if not os.path.exists(output_path) or os.path.getsize(output_path) == 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            print(f"[Failed] stable-diffusion.cpp image generation: output was not written. {detail}")
+            return None
+
+        self._save_prompt_sidecar(output_path, prompt, source_text)
+        print(f"stable-diffusion.cpp image generation: {output_path}")
+        return [output_path]
+
+    def _build_stable_diffusion_cpp_command(self, prompt, output_path):
+        executable = self.ctx["stable_diffusion_cpp_executable"] or "sd-cli"
+        model = self.ctx["stable_diffusion_cpp_model"]
+        diffusion_model = self.ctx["stable_diffusion_cpp_diffusion_model"]
+        if not model and not diffusion_model:
+            return [], "モデルまたはdiffusionモデルのパスを設定してください。"
+
+        command = [
+            executable,
+            "-M",
+            "img_gen",
+            "-p",
+            prompt,
+            "-n",
+            self.ctx["image_generation_negative_prompt"] or "",
+            "-W",
+            str(self._int_config("image_generation_width", 1024)),
+            "-H",
+            str(self._int_config("image_generation_height", 1024)),
+            "--steps",
+            str(self._int_config("image_generation_steps", 25)),
+            "--cfg-scale",
+            str(self._float_config("image_generation_cfg_scale", 7.0)),
+            "-o",
+            output_path,
+        ]
+
+        if model:
+            command.extend(["-m", model])
+        if diffusion_model:
+            command.extend(["--diffusion-model", diffusion_model])
+
+        for key, option in (
+            ("stable_diffusion_cpp_vae", "--vae"),
+            ("stable_diffusion_cpp_clip_l", "--clip_l"),
+            ("stable_diffusion_cpp_clip_g", "--clip_g"),
+            ("stable_diffusion_cpp_t5xxl", "--t5xxl"),
+            ("stable_diffusion_cpp_llm", "--llm"),
+        ):
+            value = self.ctx[key]
+            if value:
+                command.extend([option, value])
+
+        sampler = self._stable_diffusion_cpp_sampler(self.ctx["image_generation_sampler"])
+        if sampler:
+            command.extend(["--sampling-method", sampler])
+
+        seed = self._int_config("image_generation_seed", -1)
+        if seed >= 0:
+            command.extend(["-s", str(seed)])
+
+        threads = self._int_config("stable_diffusion_cpp_threads", -1)
+        if threads > 0:
+            command.extend(["-t", str(threads)])
+
+        extra_args = self._split_extra_args(self.ctx["stable_diffusion_cpp_extra_args"])
+        if extra_args is None:
+            return [], "追加CLI引数の引用符が正しくありません。"
+        command.extend(extra_args)
+        return command, None
+
+    def _stable_diffusion_cpp_sampler(self, sampler):
+        sampler = self._clean_text(sampler).lower()
+        if sampler == "":
+            return ""
+        known = {
+            "euler a": "euler_a",
+            "euler_a": "euler_a",
+            "euler": "euler",
+            "heun": "heun",
+            "dpm2": "dpm2",
+            "dpm++ 2s a": "dpm++2s_a",
+            "dpm++2s a": "dpm++2s_a",
+            "dpm++ 2m": "dpm++2m",
+            "dpm++2m": "dpm++2m",
+            "dpm++ 2m v2": "dpm++2mv2",
+            "dpm++2m v2": "dpm++2mv2",
+            "lcm": "lcm",
+        }
+        return known.get(sampler, sampler.replace(" ", "_"))
+
+    def _split_extra_args(self, extra_args):
+        extra_args = self._clean_text(extra_args)
+        if extra_args == "":
+            return []
+        if os.name == "nt":
+            return self._split_windows_args(extra_args)
+        try:
+            return shlex.split(extra_args, posix=True)
+        except ValueError:
+            return None
+
+    def _split_windows_args(self, extra_args):
+        try:
+            import ctypes
+            from ctypes import wintypes
+
+            argc = ctypes.c_int()
+            command_line_to_argv = ctypes.windll.shell32.CommandLineToArgvW
+            command_line_to_argv.argtypes = [wintypes.LPCWSTR, ctypes.POINTER(ctypes.c_int)]
+            command_line_to_argv.restype = ctypes.POINTER(wintypes.LPWSTR)
+            local_free = ctypes.windll.kernel32.LocalFree
+            local_free.argtypes = [wintypes.HLOCAL]
+            local_free.restype = wintypes.HLOCAL
+
+            argv = command_line_to_argv(extra_args, ctypes.byref(argc))
+            if not argv:
+                return None
+            try:
+                return [argv[i] for i in range(argc.value)]
+            finally:
+                local_free(argv)
+        except Exception:
+            return None
+
     def _save_image(self, image_bytes, prompt, source_text, extension):
+        image_path = self._next_image_path(source_text, extension)
+        with open(image_path, "wb") as f:
+            f.write(image_bytes)
+        self._save_prompt_sidecar(image_path, prompt, source_text)
+        return image_path
+
+    def _next_image_path(self, source_text, extension):
         os.makedirs(Path.daily_image, exist_ok=True)
         self.image_count += 1
         timestamp = time.strftime("%Y%m%d_%H%M%S", time.localtime())
         name = Path.get_path_name(source_text[:64]) or "image"
-        image_path = os.path.join(Path.daily_image, f"{timestamp}-{self.image_count:04d}-{name}{extension}")
-        with open(image_path, "wb") as f:
-            f.write(image_bytes)
+        return os.path.join(Path.daily_image, f"{timestamp}-{self.image_count:04d}-{name}{extension}")
 
+    def _save_prompt_sidecar(self, image_path, prompt, source_text):
         prompt_path = os.path.splitext(image_path)[0] + ".txt"
         with open(prompt_path, "w", encoding="utf-8-sig") as f:
             f.write("# Prompt\n")
             f.write(prompt)
             f.write("\n\n# Source\n")
             f.write(source_text)
-        return image_path
 
     def _pending_text(self):
         return self._trim_context("\n".join(self.pending_lines))
