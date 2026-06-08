@@ -10,11 +10,13 @@ from path import Path
 
 
 STABLE_DIFFUSION_WEBUI = "stable_diffusion_webui"
+EASY_SDXL_WEBUI = "easy_sdxl_webui"
 HUGGING_FACE = "huggingface"
 STABLE_DIFFUSION_CPP = "stable_diffusion_cpp"
 
 IMAGE_PROVIDER_LABELS = {
     STABLE_DIFFUSION_WEBUI: "Stable Diffusion WebUI",
+    EASY_SDXL_WEBUI: "EasySdxlWebUi",
     HUGGING_FACE: "Hugging Face",
     STABLE_DIFFUSION_CPP: "ローカル GGUF (stable-diffusion.cpp)",
 }
@@ -103,10 +105,15 @@ class ImageManager:
             return self._generate_huggingface(prompt, source_text)
         if provider == STABLE_DIFFUSION_CPP:
             return self._generate_stable_diffusion_cpp(prompt, source_text)
+        if provider == EASY_SDXL_WEBUI:
+            return self._generate_easy_sdxl_webui(prompt, source_text)
+        return self._generate_stable_diffusion_webui(prompt, source_text)
+
+    def _generate_easy_sdxl_webui(self, prompt, source_text):
         return self._generate_stable_diffusion_webui(prompt, source_text)
 
     def _generate_stable_diffusion_webui(self, prompt, source_text):
-        base_url = (self.ctx["image_generation_base_url"] or "http://127.0.0.1:7860").rstrip("/")
+        base_url = self._image_base_url()
         url = f"{base_url}/sdapi/v1/txt2img"
         payload = {
             "prompt": prompt,
@@ -192,6 +199,105 @@ class ImageManager:
         except Exception as e:
             print(f"[Exception] Hugging Face image generation: {e}")
         return None
+
+    def build_easy_sdxl_webui_launch_command(self):
+        bat_path = self._easy_sdxl_webui_bat_path()
+        if bat_path == "":
+            return [], "EasySdxlWebUiの起動batパスを設定してください。"
+
+        extra_args = self._split_extra_args(self.ctx["easy_sdxl_webui_extra_args"])
+        if extra_args is None:
+            return [], "EasySdxlWebUi追加引数の引用符が正しくありません。"
+        if not any(str(arg).lower() == "--api" for arg in extra_args):
+            extra_args = ["--api"] + extra_args
+
+        if os.name == "nt":
+            return ["cmd.exe", "/c", "call", bat_path] + extra_args, None
+        return [bat_path] + extra_args, None
+
+    def launch_easy_sdxl_webui(self):
+        command, error = self.build_easy_sdxl_webui_launch_command()
+        if error:
+            print(f"[Failed] EasySdxlWebUi launch: {error}")
+            return False
+
+        cwd = os.path.dirname(self._easy_sdxl_webui_bat_path()) or None
+        try:
+            kwargs = {"cwd": cwd}
+            if os.name == "nt":
+                kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_CONSOLE", 0)
+            subprocess.Popen(command, **kwargs)
+            print(f"EasySdxlWebUi launch: {' '.join(command)}")
+            return True
+        except Exception as e:
+            print(f"[Exception] EasySdxlWebUi launch: {e}")
+        return False
+
+    def check_easy_sdxl_webui_status(self):
+        url = f"{self._image_base_url()}/sdapi/v1/options"
+        try:
+            response = requests.get(url, timeout=self._int_config("image_generation_timeout", 120))
+            if response.status_code != 200:
+                return {"ok": False, "error": response.text}
+            data = response.json()
+            return {"ok": True, "model": data.get("sd_model_checkpoint", ""), "options": data}
+        except Exception as e:
+            return {"ok": False, "error": str(e)}
+
+    def list_easy_sdxl_webui_models(self):
+        url = f"{self._image_base_url()}/sdapi/v1/sd-models"
+        try:
+            response = requests.get(url, timeout=self._int_config("image_generation_timeout", 120))
+            if response.status_code != 200:
+                print(f"[Failed] EasySdxlWebUi models: {response.text}")
+                return []
+            models = []
+            for item in response.json():
+                model = item.get("title") or item.get("model_name") or item.get("filename")
+                if model:
+                    models.append(model)
+            return models
+        except Exception as e:
+            print(f"[Exception] EasySdxlWebUi models: {e}")
+        return []
+
+    def easy_sdxl_webui_progress(self):
+        url = f"{self._image_base_url()}/sdapi/v1/progress"
+        try:
+            response = requests.get(url, timeout=self._int_config("image_generation_timeout", 120))
+            if response.status_code != 200:
+                return {"progress": 0.0, "eta_relative": 0.0, "job": "", "error": response.text}
+            data = response.json()
+            state = data.get("state") or {}
+            return {
+                "progress": data.get("progress", 0.0),
+                "eta_relative": data.get("eta_relative", 0.0),
+                "job": state.get("job", ""),
+            }
+        except Exception as e:
+            return {"progress": 0.0, "eta_relative": 0.0, "job": "", "error": str(e)}
+
+    def _easy_sdxl_webui_bat_path(self):
+        mode = (self.ctx["easy_sdxl_webui_mode"] or "forge").lower()
+        key = "easy_sdxl_webui_a1111_bat" if mode == "a1111" else "easy_sdxl_webui_forge_bat"
+        bat_path = self.ctx[key]
+        if bat_path:
+            return bat_path
+        return self._find_easy_sdxl_webui_bat(mode)
+
+    def _find_easy_sdxl_webui_bat(self, mode):
+        file_name = f"SdxlWebUi-{mode}.bat"
+        roots = [
+            os.getcwd(),
+            os.path.dirname(os.getcwd()),
+            os.path.join(os.getcwd(), "EasySdxlWebUi"),
+            os.path.join(os.path.dirname(os.getcwd()), "EasySdxlWebUi"),
+        ]
+        for root in roots:
+            candidate = os.path.join(root, file_name)
+            if os.path.exists(candidate):
+                return candidate
+        return ""
 
     def _generate_stable_diffusion_cpp(self, prompt, source_text):
         output_path = self._next_image_path(source_text, ".png")
@@ -351,6 +457,9 @@ class ImageManager:
             f.write(image_bytes)
         self._save_prompt_sidecar(image_path, prompt, source_text)
         return image_path
+
+    def _image_base_url(self):
+        return (self.ctx["image_generation_base_url"] or "http://127.0.0.1:7860").rstrip("/")
 
     def _next_image_path(self, source_text, extension):
         os.makedirs(Path.daily_image, exist_ok=True)

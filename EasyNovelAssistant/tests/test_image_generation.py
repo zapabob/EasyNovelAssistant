@@ -17,6 +17,9 @@ from image_manager import (
 from path import Path as AppPath
 
 
+EASY_SDXL_WEBUI = "easy_sdxl_webui"
+
+
 class DummyContext(dict):
     def __getitem__(self, key):
         return self.get(key)
@@ -30,6 +33,10 @@ def image_context(**overrides):
         "auto_image_generation": True,
         "image_generation_provider": STABLE_DIFFUSION_WEBUI,
         "image_generation_base_url": "http://127.0.0.1:7860",
+        "easy_sdxl_webui_mode": "forge",
+        "easy_sdxl_webui_forge_bat": "C:/EasySdxlWebUi/SdxlWebUi-forge.bat",
+        "easy_sdxl_webui_a1111_bat": "C:/EasySdxlWebUi/SdxlWebUi-a1111.bat",
+        "easy_sdxl_webui_extra_args": "--theme dark",
         "huggingface_image_model": "stabilityai/stable-diffusion-xl-base-1.0",
         "huggingface_image_endpoint_url": "",
         "huggingface_image_token_env": "HF_TOKEN",
@@ -85,6 +92,10 @@ def test_normalize_image_provider_accepts_stable_diffusion_cpp():
     assert normalize_image_provider(STABLE_DIFFUSION_CPP) == STABLE_DIFFUSION_CPP
 
 
+def test_normalize_image_provider_accepts_easy_sdxl_webui():
+    assert normalize_image_provider(EASY_SDXL_WEBUI) == EASY_SDXL_WEBUI
+
+
 def test_image_prompt_template_receives_story_and_names():
     manager = manager_for(image_context())
 
@@ -138,6 +149,99 @@ def test_stable_diffusion_webui_payload_and_image_save(tmp_path, monkeypatch):
     assert len(paths) == 1
     assert Path(paths[0]).read_bytes() == b"\x89PNG\r\n\x1a\nfake"
     assert Path(paths[0]).with_suffix(".txt").read_text(encoding="utf-8-sig").startswith("# Prompt\nprompt text")
+
+
+def test_easy_sdxl_webui_generation_reuses_webui_api(monkeypatch):
+    ctx = image_context(image_generation_provider=EASY_SDXL_WEBUI)
+    manager = manager_for(ctx)
+    generated = []
+    monkeypatch.setattr(
+        manager,
+        "_generate_stable_diffusion_webui",
+        lambda prompt, source_text: generated.append((prompt, source_text)) or ["image.png"],
+    )
+
+    assert manager._generate("prompt text", "source text") == ["image.png"]
+    assert generated == [("prompt text", "source text")]
+
+
+def test_build_easy_sdxl_webui_launch_command_adds_api_and_extra_args():
+    manager = manager_for(image_context())
+
+    command, error = manager.build_easy_sdxl_webui_launch_command()
+
+    assert error is None
+    assert command[:4] == ["cmd.exe", "/c", "call", "C:/EasySdxlWebUi/SdxlWebUi-forge.bat"]
+    assert command[4:] == ["--api", "--theme", "dark"]
+
+
+def test_build_easy_sdxl_webui_launch_command_uses_a1111_mode():
+    manager = manager_for(image_context(easy_sdxl_webui_mode="a1111", easy_sdxl_webui_extra_args="--skip-torch-cuda-test"))
+
+    command, error = manager.build_easy_sdxl_webui_launch_command()
+
+    assert error is None
+    assert command[:4] == ["cmd.exe", "/c", "call", "C:/EasySdxlWebUi/SdxlWebUi-a1111.bat"]
+    assert command[4:] == ["--api", "--skip-torch-cuda-test"]
+
+
+def test_check_easy_sdxl_webui_status_reads_options(monkeypatch):
+    manager = manager_for(image_context())
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return {"sd_model_checkpoint": "animagine.safetensors"}
+
+    def fake_get(url, timeout):
+        captured["url"] = url
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr("image_manager.requests.get", fake_get)
+
+    status = manager.check_easy_sdxl_webui_status()
+
+    assert status["ok"] is True
+    assert status["model"] == "animagine.safetensors"
+    assert captured["url"] == "http://127.0.0.1:7860/sdapi/v1/options"
+    assert captured["timeout"] == 120
+
+
+def test_list_easy_sdxl_webui_models(monkeypatch):
+    manager = manager_for(image_context())
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return [
+                {"title": "animagine-xl-3.1.safetensors"},
+                {"model_name": "ponyDiffusionV6XL"},
+            ]
+
+    monkeypatch.setattr("image_manager.requests.get", lambda *_args, **_kwargs: FakeResponse())
+
+    assert manager.list_easy_sdxl_webui_models() == ["animagine-xl-3.1.safetensors", "ponyDiffusionV6XL"]
+
+
+def test_easy_sdxl_webui_progress(monkeypatch):
+    manager = manager_for(image_context())
+
+    class FakeResponse:
+        status_code = 200
+        text = "ok"
+
+        def json(self):
+            return {"progress": 0.5, "eta_relative": 12.3, "state": {"job": "txt2img"}}
+
+    monkeypatch.setattr("image_manager.requests.get", lambda *_args, **_kwargs: FakeResponse())
+
+    assert manager.easy_sdxl_webui_progress() == {"progress": 0.5, "eta_relative": 12.3, "job": "txt2img"}
 
 
 def test_huggingface_payload_and_image_save(tmp_path, monkeypatch):

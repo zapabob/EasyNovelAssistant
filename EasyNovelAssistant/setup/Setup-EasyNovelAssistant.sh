@@ -6,8 +6,9 @@ if [ ! -d "venv" ]; then
 fi
 source venv/bin/activate
 
-# install pip packages
-pip install -r ./EasyNovelAssistant/setup/res/requirements.txt
+# install app packages through the shared uv project definition
+python -m pip install -q --upgrade pip uv
+python -m uv sync --active --no-dev
 
 # download kobold cpp
 mkdir -p KoboldCpp

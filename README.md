@@ -107,6 +107,10 @@
 
 - 既定では `自動画像生成` はOFFです。
 - `Stable Diffusion WebUI` 互換APIは `http://127.0.0.1:7860/sdapi/v1/txt2img` を使います。
+- `EasySdxlWebUi` は `Stable Diffusion WebUI` 互換APIに加えて、専用の起動と状態確認を使えます。
+	- `EasySdxlWebUiを起動` は `SdxlWebUi-forge.bat` または `SdxlWebUi-a1111.bat` に `--api` を自動付与します。
+	- `EasySdxlWebUi疎通確認` は `/sdapi/v1/options`、`EasySdxlWebUiモデル一覧` は `/sdapi/v1/sd-models`、`EasySdxlWebUi進捗表示` は `/sdapi/v1/progress` を確認します。
+	- `easy_sdxl_webui_forge_bat` または `easy_sdxl_webui_a1111_bat` にbatパスを設定できます。空欄の場合は隣接する `EasySdxlWebUi` フォルダを探します。
 - `Hugging Face` は `huggingface_image_model` または `huggingface_image_endpoint_url` を使います。
 - Hugging Face のトークンは `HF_TOKEN` などの環境変数から読みます。値そのものは設定ファイルに保存しません。
 - `ローカル GGUF (stable-diffusion.cpp)` は `sd-cli` / `sd-cli.exe` を直接呼び出します。
@@ -116,6 +120,10 @@
 	- 追加の `--fa`、`--vae-tiling`、`--offload-to-cpu`、`--rng cpu` などは `stable_diffusion_cpp_extra_args` に入れられます。
 - 生成画像と対応するプロンプトは `image/YYYYMMDD/` に保存されます。
 - 毎行ではなく、設定した行数または文字数ごとに本文をまとめて画像生成します。
+
+### uv 環境
+
+依存関係は `pyproject.toml` に集約しています。Windowsでは `Run-EasyNovelAssistant-uv.bat` から `uv run` で起動できます。既存のインストール処理も `uv sync --active --no-dev` でアプリ依存を同期します。
 
 **次のステップは [はじめての生成](https://github.com/Zuntan03/EasyNovelAssistant/wiki/%E3%81%AF%E3%81%98%E3%82%81%E3%81%A6%E3%81%AE%E7%94%9F%E6%88%90) です。**
 
