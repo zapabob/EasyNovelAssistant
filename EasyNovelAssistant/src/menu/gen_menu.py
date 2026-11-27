@@ -33,7 +33,8 @@ class GenMenu:
 
     def _abort(self):
         self.ctx.generator.abort()
-        self.ctx.style_bert_vits2.abort()
+        self.ctx.speech.abort()
+        self.ctx.image.abort()
 
     def on_menu_open(self):
         self.menu.delete(0, tk.END)

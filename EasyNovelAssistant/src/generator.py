@@ -24,6 +24,8 @@ class Generator:
         self.pre_check_time = time.perf_counter()
         self.gen_area_text = ""
         self.last_line = ""
+        self.stream_buffer = []
+        self.stream_lock = threading.Lock()
 
         self.recursive_mode = False
         self.recursive_state_path = os.path.join(Path.log, "recursive_session.pkl")
@@ -60,6 +62,11 @@ class Generator:
                 input_text = self.ctx.form.input_area.get_prompt_text()
                 if input_text != "":
                     self.generate_job = self.gen_queue.push(self._generate, input_text=input_text)
+                    with self.stream_lock:
+                        self.stream_buffer = []
+                    self.gen_area_text = ""
+                    self.last_line = ""
+                    self.ctx.form.gen_area.set_text("")
             elif self.generate_job.successful():
                 result = self.generate_job.result
                 if result is None:
@@ -67,22 +74,31 @@ class Generator:
                         self.enabled = False
                         self.ctx.form.update_title()
                 else:
-                    result = self._get_last_line(self.generate_job.args["input_text"]) + result
+                    input_text = self.generate_job.args["input_text"]
+                    if (
+                        self.ctx.kobold_cpp.backend != "hypura"
+                        and not self.ctx.kobold_cpp.formats_prompt_for_generate(input_text)
+                    ):
+                        result = self._get_last_line(input_text) + result
                     self.ctx.form.output_area.append_output(result)
                 self.generate_job = None
             elif self.generate_job.canceled():
                 self.generate_job = None
+            elif self.ctx.kobold_cpp.backend == "hypura":
+                self._drain_stream_buffer()
 
-            if self.check_job is None:
+            if self.ctx.kobold_cpp.backend != "hypura" and self.check_job is None:
                 now_time = time.perf_counter()
                 if now_time - self.pre_check_time > self.ctx["check_interval"]:
                     self.check_job = self.check_queue.push(self._check)
                     self.pre_check_time = now_time
-            elif self.check_job.successful():
+            elif self.ctx.kobold_cpp.backend != "hypura" and self.check_job.successful():
                 result = self.check_job.result
                 if result is not None:
                     if self.generate_job is not None:
-                        result = self._get_last_line(self.generate_job.args["input_text"]) + result
+                        input_text = self.generate_job.args["input_text"]
+                        if not self.ctx.kobold_cpp.formats_prompt_for_generate(input_text):
+                            result = self._get_last_line(input_text) + result
                     if result != self.gen_area_text:
                         if result.startswith(self.gen_area_text):
                             append_text = result[len(self.gen_area_text) :]
@@ -91,10 +107,10 @@ class Generator:
                             lines = (self.last_line + append_text).splitlines() if (self.last_line + append_text) else []
                             if len(lines) > 0:
                                 for line in lines[:-1]:
-                                    self._auto_speech(line)
+                                    self._handle_generated_line(line)
                                 self.last_line = lines[-1]
                                 if append_text.endswith("\n"):
-                                    self._auto_speech(self.last_line)
+                                    self._handle_generated_line(self.last_line)
                                     self.last_line = ""
                             self.ctx.form.gen_area.append_text(append_text)
                         else:
@@ -102,17 +118,17 @@ class Generator:
                             lines = result.splitlines() if result else []
                             if len(lines) > 0:
                                 for line in lines[:-1]:
-                                    self._auto_speech(line)
+                                    self._handle_generated_line(line)
                                 self.last_line = lines[-1]
                                 if result.endswith("\n"):
-                                    self._auto_speech(self.last_line)
+                                    self._handle_generated_line(self.last_line)
                                     self.last_line = ""
                             else:
                                 self.last_line = ""
                             self.ctx.form.gen_area.set_text(result)
                         self.gen_area_text = result
                 self.check_job = None
-            elif self.check_job.canceled():
+            elif self.ctx.kobold_cpp.backend != "hypura" and self.check_job.canceled():
                 self.check_job = None
         else:
             if self.generate_job is not None:
@@ -242,17 +258,51 @@ class Generator:
             name = text.split("「", 1)[0]
             if self.ctx["char_name"] in name:
                 if self.ctx["auto_speech_char"]:
-                    self.ctx.style_bert_vits2.generate(text)
+                    self.ctx.speech.generate(text)
                     return
             elif self.ctx["user_name"] in name:
                 if self.ctx["auto_speech_user"]:
-                    self.ctx.style_bert_vits2.generate(text)
+                    self.ctx.speech.generate(text)
                     return
         if self.ctx["auto_speech_other"]:
-            self.ctx.style_bert_vits2.generate(text)
+            self.ctx.speech.generate(text)
+
+    def _auto_image(self, text):
+        if text == "":
+            return
+        self.ctx.image.collect(text)
+
+    def _handle_generated_line(self, text):
+        self._auto_speech(text)
+        self._auto_image(text)
 
     def _generate(self, input_text):
+        if self.ctx.kobold_cpp.backend == "hypura":
+            return self.ctx.kobold_cpp.generate_stream(input_text, on_token=self._on_stream_token)
         return self.ctx.kobold_cpp.generate(input_text)
+
+    def _on_stream_token(self, token):
+        with self.stream_lock:
+            self.stream_buffer.append(token)
+
+    def _drain_stream_buffer(self):
+        with self.stream_lock:
+            if not self.stream_buffer:
+                return
+            append_text = "".join(self.stream_buffer)
+            self.stream_buffer = []
+        if append_text == "":
+            return
+        lines = (self.last_line + append_text).splitlines() if (self.last_line + append_text) else []
+        if len(lines) > 0:
+            for line in lines[:-1]:
+                self._handle_generated_line(line)
+            self.last_line = lines[-1]
+            if append_text.endswith("\n"):
+                self._handle_generated_line(self.last_line)
+                self.last_line = ""
+        self.ctx.form.gen_area.append_text(append_text)
+        self.gen_area_text += append_text
 
     def _check(self):
         return self.ctx.kobold_cpp.check()
@@ -273,4 +323,9 @@ class Generator:
         return re.search(r'(.)\1', text) is not None
 
     def abort(self):
-        self.check_queue.push(self.ctx.kobold_cpp.abort)
+        with self.stream_lock:
+            self.stream_buffer = []
+        if self.generate_job is not None:
+            self.gen_queue.cancel(self.generate_job)
+            self.generate_job = None
+        self.ctx.kobold_cpp.abort()

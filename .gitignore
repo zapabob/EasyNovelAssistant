@@ -15,6 +15,9 @@ Style-Bert-VITS2/pretrained/
 Style-Bert-VITS2/pretrained_jp_extra/
 Style-Bert-VITS2/bert/*/
 Style-Bert-VITS2/slm/*/
+Irodori-TTS-Server/.env
+Irodori-TTS-Server/.venv/
+Irodori-TTS-Server/voices/
 
 # 仮想環境
 venv/
@@ -31,9 +34,11 @@ EasyNovelAssistant/setup/lib/python/
 # ログファイル
 log/
 speech/
+image/
 
 # 日付の含まれるテキストファイル（一時ファイル、ログ等）
 *2025*.txt
+*2026*.txt
 *2024*.txt
 *2023*.txt
 *2022*.txt
@@ -76,3 +81,4 @@ EasyNovelAssistant/setup/lib/python/Lib/site-packages/
 
 # 外部リポジトリ
 Style-Bert-VITS2/ 
+Irodori-TTS-Server/

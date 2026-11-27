@@ -15,8 +15,8 @@ if %errorlevel% neq 0 ( pause & popd & exit /b 1 )
 call %~dp0ActivateVirtualEnvironment.bat %APP_VENV_DIR%
 if %errorlevel% neq 0 ( popd & exit /b 1 )
 
-echo python -m pip install -q --upgrade pip
-python -m pip install -q --upgrade pip
+echo python -m pip install -q --upgrade pip uv
+python -m pip install -q --upgrade pip uv
 
 echo python -c "import tkinter" > NUL 2>&1
 python -c "import tkinter" > NUL 2>&1
@@ -26,8 +26,8 @@ if %errorlevel% neq 0 (
 	%PS_CMD% Expand-Archive -Path %~dp0res\tkinter-PythonSoftwareFoundationLicense.zip -DestinationPath %APP_VENV_DIR% -Force
 )
 
-echo pip install -q -r %~dp0res\requirements.txt
-pip install -q -r %~dp0res\requirements.txt
+echo python -m uv sync --active --no-dev
+python -m uv sync --active --no-dev
 if %errorlevel% neq 0 ( pause & popd & exit /b 1 )
 
 if not exist %KOBOLD_CPP_DIR%\ ( mkdir %KOBOLD_CPP_DIR% )
